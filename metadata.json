@@ -1,0 +1,6 @@
+{
+  "name": "TOEFL CBT Success — Interactive Digital Learning System",
+  "description": "Comprehensive interactive TOEFL preparation system based on Peterson's TOEFL CBT Success by Bruce Rogers, featuring lessons, interactive exercises, mini-tests, full-length practice tests, error review, and score equating.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
