@@ -242,94 +242,208 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
         </div>
       )}
 
-      {/* STEP 2: EXAMPLE */}
+      {/* STEP 2: EXAMPLE & STRATEGY */}
       {currentStep === 'example' && (
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xs">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <h2 className="text-base font-bold text-slate-900">
-              Authentic Sample Item Walkthrough
-            </h2>
-            <span className="text-xs text-slate-500 font-mono">
-              Source: Book p. {lesson.examples[0]?.sourcePage || lesson.sourcePages[0]}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 space-y-8 shadow-xs">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-2">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                Strategy & Sample Item Walkthrough
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Master the core tactical patterns and analyze model questions before starting practice.
+              </p>
+            </div>
+            <span className="text-xs text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100 font-mono font-medium shrink-0 self-start sm:self-auto">
+              Source: Book pp. {lesson.sourcePages.join('–')}
             </span>
           </div>
 
-          {lesson.examples.map((eg, idx) => (
-            <div key={eg.id || idx} className="space-y-4">
-              {eg.dialogue && (
-                <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                      Spoken Dialog
+          {/* Section A: Tactical Rules & Strategy */}
+          {lesson.strategy && lesson.strategy.length > 0 && (
+            <div className="bg-slate-50/80 border border-slate-200/80 rounded-xl p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <CheckSquare className="w-4 h-4 text-blue-600" />
+                  <span>Core Test-Taking Rules & Patterns</span>
+                </h3>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  {lesson.strategy.length} key principle{lesson.strategy.length > 1 ? 's' : ''}
+                </span>
+              </div>
+              <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                {lesson.strategy.map((item, idx) => (
+                  <li
+                    key={idx}
+                    className="flex items-start gap-2.5 p-3 bg-white rounded-lg border border-slate-200/60 text-xs text-slate-800 leading-relaxed shadow-2xs"
+                  >
+                    <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                      {idx + 1}
                     </span>
-                    <button
-                      onClick={() =>
-                        handlePlayAudio(
-                          eg.dialogue?.map((d) => `${d.speaker}: ${d.text}`).join('. ') || ''
-                        )
-                      }
-                      className="flex items-center gap-1.5 text-xs text-blue-700 font-medium hover:underline"
-                    >
-                      <Volume2 className="w-3.5 h-3.5" />
-                      <span>{isPlayingAudio ? 'Stop Audio' : 'Listen with Audio'}</span>
-                    </button>
-                  </div>
-                  {eg.dialogue.map((line, lIdx) => (
-                    <p key={lIdx} className="text-sm text-slate-800 font-serif">
-                      <strong className="text-slate-900 font-mono text-xs mr-2">{line.speaker}:</strong>
-                      {line.text}
-                    </p>
-                  ))}
-                </div>
-              )}
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-              {eg.passage && (
-                <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-xl text-sm font-serif leading-relaxed text-slate-800">
-                  {eg.passage}
-                </div>
-              )}
+          {/* Section B: Authentic Sample Item Walkthroughs */}
+          {lesson.examples && lesson.examples.length > 0 ? (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between pt-2">
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-emerald-600" />
+                  <span>Authentic Sample Item Walkthrough ({lesson.examples.length})</span>
+                </h3>
+                <span className="text-[11px] text-slate-500">
+                  Detailed author analysis & distractor breakdown
+                </span>
+              </div>
 
-              {eg.prompt && (
-                <p className="text-sm font-semibold text-slate-900">{eg.prompt}</p>
-              )}
-
-              {eg.choices && (
-                <div className="grid grid-cols-1 gap-2 pt-2">
-                  {eg.choices.map((c) => {
-                    const isCorrect = c.id === eg.correctAnswer;
-                    return (
-                      <div
-                        key={c.id}
-                        className={`p-3 rounded-lg border text-sm flex items-center justify-between ${
-                          isCorrect
-                            ? 'bg-emerald-50/70 border-emerald-300 text-emerald-950 font-medium'
-                            : 'bg-white border-slate-200 text-slate-600'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="font-mono text-xs w-5 h-5 rounded bg-slate-100 flex items-center justify-center font-bold text-slate-700">
-                            {c.id}
-                          </span>
-                          <span>{c.text}</span>
-                        </div>
-                        {isCorrect && (
-                          <span className="text-xs text-emerald-700 font-semibold">
-                            Correct Answer
-                          </span>
+              <div className="space-y-6">
+                {lesson.examples.map((eg, idx) => (
+                  <div
+                    key={eg.id || idx}
+                    className="p-5 sm:p-6 bg-slate-50/50 border border-slate-200/90 rounded-2xl space-y-4"
+                  >
+                    {/* Item Meta */}
+                    <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
+                      <span className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-slate-200 text-slate-800 rounded font-mono text-[11px]">
+                          Item {idx + 1}
+                        </span>
+                        {eg.prompt && !eg.sentence && (
+                          <span className="text-slate-700 font-medium">{eg.prompt}</span>
                         )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      </span>
+                      {eg.sourcePage && (
+                        <span className="text-[11px] text-slate-500 font-mono">
+                          Source: Book p. {eg.sourcePage}
+                        </span>
+                      )}
+                    </div>
 
-              <div className="p-4 bg-blue-50/60 border border-blue-200/70 rounded-xl text-xs text-slate-800 space-y-1">
-                <span className="font-bold text-blue-900">Explanation & Analysis:</span>
-                <p className="leading-relaxed">{eg.explanation}</p>
+                    {/* Spoken dialogue if listening */}
+                    {eg.dialogue && eg.dialogue.length > 0 && (
+                      <div className="p-4 bg-white border border-slate-200/80 rounded-xl space-y-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                            Spoken Dialog
+                          </span>
+                          <button
+                            onClick={() =>
+                              handlePlayAudio(
+                                eg.dialogue?.map((d) => `${d.speaker}: ${d.text}`).join('. ') || ''
+                              )
+                            }
+                            className="flex items-center gap-1.5 text-xs text-blue-700 font-medium hover:underline"
+                          >
+                            <Volume2 className="w-3.5 h-3.5" />
+                            <span>{isPlayingAudio ? 'Stop Audio' : 'Listen with Audio'}</span>
+                          </button>
+                        </div>
+                        {eg.dialogue.map((line, lIdx) => (
+                          <p key={lIdx} className="text-sm text-slate-800 font-serif">
+                            <strong className="text-slate-900 font-mono text-xs mr-2">
+                              {line.speaker}:
+                            </strong>
+                            {line.text}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Reading passage if reading */}
+                    {eg.passage && (
+                      <div className="p-4 bg-white border border-slate-200/80 rounded-xl text-sm font-serif leading-relaxed text-slate-800">
+                        {eg.passage}
+                      </div>
+                    )}
+
+                    {/* Question Stem / Sentence */}
+                    {(eg.sentence || (eg.prompt && eg.choices)) && (
+                      <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl">
+                        <p className="text-sm sm:text-base text-slate-900 font-serif font-medium leading-relaxed whitespace-pre-line">
+                          {eg.sentence || eg.prompt}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Answer Choices */}
+                    {eg.choices && eg.choices.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        {eg.choices.map((c) => {
+                          const isCorrect = c.id === eg.correctAnswer;
+                          return (
+                            <div
+                              key={c.id}
+                              className={`p-3 rounded-xl border text-xs sm:text-sm flex items-center justify-between transition-colors ${
+                                isCorrect
+                                  ? 'bg-emerald-50/80 border-emerald-300 text-emerald-950 font-medium shadow-2xs'
+                                  : 'bg-white border-slate-200 text-slate-600'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <span
+                                  className={`font-mono text-xs w-6 h-6 rounded-lg flex items-center justify-center font-bold ${
+                                    isCorrect
+                                      ? 'bg-emerald-600 text-white'
+                                      : 'bg-slate-100 text-slate-700'
+                                  }`}
+                                >
+                                  {c.id}
+                                </span>
+                                <span>{c.text}</span>
+                              </div>
+                              {isCorrect && (
+                                <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-100/70 px-2 py-0.5 rounded">
+                                  Correct
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Author Analysis & Explanation */}
+                    {eg.explanation && (
+                      <div className="p-4 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs text-slate-800 space-y-1.5">
+                        <span className="font-bold text-blue-900 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                          <HelpCircle className="w-3.5 h-3.5 text-blue-700" />
+                          <span>Author Analysis & Why Other Choices Are Incorrect:</span>
+                        </span>
+                        <p className="leading-relaxed text-slate-700">{eg.explanation}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+          ) : (
+            /* Graceful source-aware notice when examples are in exercises */
+            <div className="p-6 bg-slate-50 border border-slate-200/80 rounded-2xl text-center space-y-3">
+              <BookOpen className="w-8 h-8 text-blue-600 mx-auto" />
+              <h3 className="text-sm font-bold text-slate-900">
+                Instructional Principles Outlined
+              </h3>
+              <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                Review the core test-taking rules and patterns above, then proceed to the interactive exercises to practice these principles on verified exam questions.
+              </p>
+              <div className="pt-2">
+                <button
+                  onClick={() => setCurrentStep('practice')}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-lg transition-colors inline-flex items-center gap-2"
+                >
+                  <span>Go to Exercises ({lesson.exercises.reduce((acc, ex) => acc + ex.questions.length, 0)})</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
 
+          {/* Bottom Step Navigation Bar */}
           <div className="flex items-center justify-between pt-4 border-t border-slate-100">
             <button
               onClick={() => setCurrentStep('learn')}
@@ -342,7 +456,7 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({
               onClick={() => setCurrentStep('practice')}
               className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm rounded-lg shadow-sm transition-colors"
             >
-              <span>Start Exercises</span>
+              <span>Start Exercises ({lesson.exercises.reduce((acc, ex) => acc + ex.questions.length, 0)})</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

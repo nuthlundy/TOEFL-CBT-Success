@@ -936,7 +936,85 @@ export const ALL_LESSONS: Lesson[] = [
       'Avoid double subjects.',
       'Expletive structures follow: There + be + subject, or It + be + adjective + infinitive.',
     ],
-    examples: [],
+    examples: [
+      {
+        id: 'L17-EG01',
+        prompt: 'Sample Item 1: Missing Finite Verb',
+        sentence: 'The art of storytelling ________ almost as old as humanity.',
+        choices: [
+          { id: 'A', text: 'that is' },
+          { id: 'B', text: 'is' },
+          { id: 'C', text: 'it is' },
+          { id: 'D', text: 'being' },
+        ],
+        correctAnswer: 'B',
+        explanation: 'The sentence needs a main finite verb to complete the independent clause. (B) supplies the singular verb "is". Choice (A) makes the clause subordinate with "that". Choice (C) introduces an extra subject pronoun "it", creating a double subject error ("The art of storytelling it is..."). Choice (D) uses the participle "being", which cannot function alone as the finite main verb of an independent clause.',
+        sourcePage: 123,
+      },
+      {
+        id: 'L17-EG02',
+        prompt: 'Sample Item 2: Missing Subject Modifier',
+        sentence: '________ a few of the sounds produced by insects can be heard by humans.',
+        choices: [
+          { id: 'A', text: 'Only' },
+          { id: 'B', text: 'There are' },
+          { id: 'C', text: 'That' },
+          { id: 'D', text: 'With' },
+        ],
+        correctAnswer: 'A',
+        explanation: 'The sentence already contains a subject ("sounds") and a complete verb phrase ("can be heard"). (A) supplies the adverb "Only", which modifies the subject phrase "a few of the sounds..." correctly without introducing an extra verb. Choice (B) introduces "There are", creating an ungrammatical double-verb clause without a connector. Choice (C) turns the clause into a subordinate noun clause with "That". Choice (D) turns the subject into a prepositional object, leaving the sentence without a subject.',
+        sourcePage: 124,
+      },
+      {
+        id: 'L17-EG03',
+        prompt: 'Sample Item 3: Missing Independent Clause with Adverb Clause',
+        sentence: '________ when lava cools very rapidly.',
+        choices: [
+          { id: 'A', text: 'Because obsidian forms' },
+          { id: 'B', text: 'Obsidian is formed' },
+          { id: 'C', text: 'Obsidian forms' },
+          { id: 'D', text: 'Forming obsidian' },
+        ],
+        correctAnswer: 'C',
+        explanation: 'The sentence begins with a blank followed by an adverb clause ("when lava cools very rapidly"). An independent clause must precede the adverb clause. (C) provides both a subject ("Obsidian") and an active finite verb ("forms"). Choice (A) creates another adverb clause with "Because", leaving the sentence with no independent clause. Choice (B) uses passive voice inappropriately. Choice (D) is a participial phrase lacking a finite verb.',
+        sourcePage: 124,
+      },
+      {
+        id: 'L17-EG04',
+        prompt: 'Sample Item 4: Missing Direct Object',
+        sentence: 'Duke Ellington wrote ________ during his career.',
+        choices: [
+          { id: 'A', text: 'that over a thousand songs' },
+          { id: 'B', text: 'over a thousand songs' },
+          { id: 'C', text: 'of over a thousand songs' },
+          { id: 'D', text: 'over a thousand songs were' },
+        ],
+        correctAnswer: 'B',
+        explanation: 'The transitive verb "wrote" requires a direct object noun phrase. (B) "over a thousand songs" correctly functions as the direct object. Choice (A) introduces "that", which is unneeded and ungrammatical. Choice (C) introduces an unnecessary preposition "of". Choice (D) introduces an extra verb "were", creating a clause error.',
+        sourcePage: 125,
+      },
+      {
+        id: 'L17-EG05',
+        prompt: 'Sample Item 5: Tense Agreement in Independent Clause',
+        sentence: 'Before the invention of the printing press, books ________.',
+        choices: [
+          { id: 'A', text: 'that were very rare' },
+          { id: 'B', text: 'were very rare' },
+          { id: 'C', text: 'are very rare' },
+          { id: 'D', text: 'as very rare' },
+        ],
+        correctAnswer: 'B',
+        explanation: 'The independent clause requires a finite past-tense verb that agrees with the introductory past time phrase ("Before the invention of the printing press"). (B) supplies the past verb "were" and the adjective complement "very rare". Choice (A) creates an incomplete clause with "that". Choice (C) uses present tense "are", which conflicts with the historical timeframe. Choice (D) lacks a verb.',
+        sourcePage: 125,
+      },
+      {
+        id: 'L17-EG06',
+        prompt: 'Expletive Clause Patterns with "There" and "It"',
+        sentence: 'Pattern 1: There + be + noun subject:\n• "There are many skyscrapers in New York City."\n• "There was a good movie on television last night."\n\nPattern 2: It + be + adjective + infinitive / noun phrase:\n• "It is important to be punctual for appointments."\n• "It takes a long time to learn a language."',
+        explanation: 'Expletives are words with no specific lexical meaning that serve as structural place-holders in subject position. On the TOEFL, Structure questions often test whether you recognize that "there" is followed by a form of "be" and a delayed noun subject, while "it" is followed by "be", an adjective, and an infinitive phrase.',
+        sourcePage: 125,
+      },
+    ],
     exercises: [
       {
         id: 'L17-EX01',
@@ -992,7 +1070,22 @@ export const ALL_LESSONS: Lesson[] = [
       'The relative pronoun marker acts as subject or object in the clause.',
       'Prepositional relative clauses use: preposition + which / whom.',
     ],
-    examples: [],
+    examples: [
+      {
+        id: 'L18-EG01',
+        prompt: 'Sample Item: Relative Pronoun Subject',
+        sentence: 'Most folk songs are ballads ________ have simple words and tell simple stories.',
+        choices: [
+          { id: 'A', text: 'what' },
+          { id: 'B', text: 'although' },
+          { id: 'C', text: 'when' },
+          { id: 'D', text: 'that' },
+        ],
+        correctAnswer: 'D',
+        explanation: 'The adjective clause modifies the plural noun "ballads". The relative pronoun "that" serves as the subject of the clause ("that have simple words..."). (A) "what" cannot be used as a relative pronoun with an expressed antecedent noun. (B) "although" is an adverbial conjunction of concession. (C) "when" introduces time clauses.',
+        sourcePage: 129,
+      },
+    ],
     exercises: [
       {
         id: 'L18-EX01',
@@ -1033,7 +1126,22 @@ export const ALL_LESSONS: Lesson[] = [
       'A participle alone cannot serve as the main verb of a clause.',
       'Active voice takes -ing; passive voice takes past participle.',
     ],
-    examples: [],
+    examples: [
+      {
+        id: 'L19-EG01',
+        prompt: 'Sample Item: Present Participle Modifier',
+        sentence: 'Natural gas often occurs together with petroleum in the minute pores of rocks ________ deep underground.',
+        choices: [
+          { id: 'A', text: 'lie' },
+          { id: 'B', text: 'that lying' },
+          { id: 'C', text: 'lying' },
+          { id: 'D', text: 'are lying' },
+        ],
+        correctAnswer: 'C',
+        explanation: 'The sentence requires a participial modifier to describe the noun "rocks". (C) "lying" is a present participle functioning as an active modifier (reduced from "which lie"). (A) and (D) add extra finite verbs without a connector, causing a run-on error. (B) incorrectly pairs the relative marker "that" with a participle without an auxiliary verb.',
+        sourcePage: 134,
+      },
+    ],
     exercises: [
       {
         id: 'L19-EX01',
@@ -1071,7 +1179,22 @@ export const ALL_LESSONS: Lesson[] = [
     objective: 'Recognize and complete noun phrases that rephrase adjacent nouns without verbs.',
     summary: 'An appositive is a noun phrase explaining another noun. It does NOT contain a relative marker or verb.',
     strategy: ['Appositives are noun phrases set off by commas.'],
-    examples: [],
+    examples: [
+      {
+        id: 'L20-EG01',
+        prompt: 'Sample Item: Appositive Noun Phrase',
+        sentence: 'The Democratic party is older than the other major American political party, ________.',
+        choices: [
+          { id: 'A', text: 'which the Republican party' },
+          { id: 'B', text: 'the Republican party' },
+          { id: 'C', text: 'it is the Republican party' },
+          { id: 'D', text: 'the Republican party is' },
+        ],
+        correctAnswer: 'B',
+        explanation: 'The sentence requires an appositive to restate "the other major American political party". An appositive is a simple noun phrase without a finite verb or incomplete relative marker. (B) correctly supplies "the Republican party". (C) and (D) introduce verbs ("is"), creating a comma splice error. (A) uses "which" without a verb.',
+        sourcePage: 138,
+      },
+    ],
     exercises: [
       {
         id: 'L20-EX01',
@@ -1109,7 +1232,22 @@ export const ALL_LESSONS: Lesson[] = [
     objective: 'Complete full and reduced adverb clauses (because, although, when, if, while).',
     summary: 'An adverb clause consists of an adverb marker plus subject and verb.',
     strategy: ['Because / Although + Clause; Because of / Despite + Noun Phrase.'],
-    examples: [],
+    examples: [
+      {
+        id: 'L21-EG01',
+        prompt: 'Sample Item: Conditional Adverb Clause',
+        sentence: 'Small sailboats can easily capsize ________ they are not handled carefully.',
+        choices: [
+          { id: 'A', text: 'but' },
+          { id: 'B', text: 'which' },
+          { id: 'C', text: 'if' },
+          { id: 'D', text: 'so' },
+        ],
+        correctAnswer: 'C',
+        explanation: 'The sentence requires a subordinating conjunction to introduce a condition for the clause "they are not handled carefully". (C) "if" correctly introduces the conditional adverb clause. (A) "but" is a coordinating conjunction requiring a balanced independent clause. (B) "which" introduces adjective clauses. (D) "so" indicates result, not condition.',
+        sourcePage: 141,
+      },
+    ],
     exercises: [
       {
         id: 'L21-EX01',
@@ -1147,7 +1285,22 @@ export const ALL_LESSONS: Lesson[] = [
     objective: 'Construct and complete noun clauses with statement word order.',
     summary: 'Noun clauses function as subjects or objects. They ALWAYS use statement word order (subject + verb), NEVER question inversion.',
     strategy: ['Look for statement word order: Marker + Subject + Verb.'],
-    examples: [],
+    examples: [
+      {
+        id: 'L22-EG01',
+        prompt: 'Sample Item: Noun Clause as Sentence Subject',
+        sentence: '________ begin their existence as ice crystals over most of the earth seems likely.',
+        choices: [
+          { id: 'A', text: 'Raindrops' },
+          { id: 'B', text: 'If raindrops' },
+          { id: 'C', text: 'What if raindrops' },
+          { id: 'D', text: 'That raindrops' },
+        ],
+        correctAnswer: 'D',
+        explanation: 'The entire clause functions as the subject of the main verb "seems likely". (D) "That raindrops" introduces a noun clause that can serve as the sentence subject ("That raindrops begin their existence as ice crystals... seems likely"). (A) "Raindrops" results in two verbs ("begin" and "seems") with no connector. (B) "If" cannot introduce a subject noun clause in formal English. (C) "What if" is informal and ungrammatical as a subject.',
+        sourcePage: 145,
+      },
+    ],
     exercises: [
       {
         id: 'L22-EX01',
@@ -1185,7 +1338,22 @@ export const ALL_LESSONS: Lesson[] = [
     objective: 'Identify prepositional phrases and verify subject-verb boundaries.',
     summary: 'The object of a preposition cannot serve as the subject of a sentence.',
     strategy: ['Prepositional phrases modify nouns or verbs but do not contain main subjects.'],
-    examples: [],
+    examples: [
+      {
+        id: 'L23-EG01',
+        prompt: 'Sample Item: Prepositional Phrase of Instrument',
+        sentence: 'Dynamite is ordinarily detonated ________ called a blasting cap.',
+        choices: [
+          { id: 'A', text: 'a device is used' },
+          { id: 'B', text: 'that a device' },
+          { id: 'C', text: 'with a device' },
+          { id: 'D', text: 'the use of a device' },
+        ],
+        correctAnswer: 'C',
+        explanation: 'The sentence requires a prepositional phrase expressing the instrument used in detonation. (C) "with a device" correctly provides the preposition "with" and noun object "device", which is modified by the reduced participle "called a blasting cap". (A) introduces an extra finite verb without a connector. (B) creates an incomplete noun clause. (D) lacks a preposition.',
+        sourcePage: 149,
+      },
+    ],
     exercises: [
       {
         id: 'L23-EX01',
