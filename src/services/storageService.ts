@@ -3,9 +3,10 @@
  * Manages persistent user progress, error log, bookmarks, notes, and tests
  */
 
-import { Bookmark, NoteItem, TestResultRecord, TweSubmission, UserAnswerAttempt } from '../types/toefl';
+import { BookId, Bookmark, NoteItem, TestResultRecord, TweSubmission, UserAnswerAttempt } from '../types/toefl';
 
 const STORAGE_KEYS = {
+  ACTIVE_BOOK: 'toefl_cbt_active_book',
   ATTEMPTS: 'toefl_cbt_attempts',
   COMPLETED_LESSONS: 'toefl_cbt_completed_lessons',
   TEST_RESULTS: 'toefl_cbt_test_results',
@@ -19,20 +20,52 @@ const STORAGE_KEYS = {
 };
 
 export const storageService = {
-  // Attempts & Mistakes
-  getAttempts(): UserAnswerAttempt[] {
+  // Active Book Selection
+  getActiveBookId(): BookId {
+    try {
+      const bId = localStorage.getItem(STORAGE_KEYS.ACTIVE_BOOK);
+      if (
+        bId === 'PETERSONS-CBT-SUCCESS' ||
+        bId === 'CLIFFS-TOEFL-PREPARATION-GUIDE' ||
+        bId === 'CLIFFS-TOEFL-CBT'
+      ) {
+        return bId;
+      }
+      return 'PETERSONS-CBT-SUCCESS';
+    } catch {
+      return 'PETERSONS-CBT-SUCCESS';
+    }
+  },
+
+  setActiveBookId(bookId: BookId): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_BOOK, bookId);
+    } catch (e) {
+      console.error('Failed to save active book', e);
+    }
+  },
+
+  // Attempts & Mistakes (Isolated by bookId)
+  getAttempts(bookId?: BookId | 'ALL'): UserAnswerAttempt[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.ATTEMPTS);
-      return data ? JSON.parse(data) : [];
+      const all: UserAnswerAttempt[] = data ? JSON.parse(data) : [];
+      if (!bookId || bookId === 'ALL') {
+        return all;
+      }
+      return all.filter((a) => (a.sourceBookId || 'PETERSONS-CBT-SUCCESS') === bookId);
     } catch {
       return [];
     }
   },
 
   recordAttempt(attempt: UserAnswerAttempt): void {
-    const attempts = this.getAttempts();
-    // Keep last 1000 attempts
-    const updated = [attempt, ...attempts].slice(0, 1000);
+    const attempts = this.getAttempts('ALL');
+    const enrichedAttempt = {
+      ...attempt,
+      sourceBookId: attempt.sourceBookId || this.getActiveBookId(),
+    };
+    const updated = [enrichedAttempt, ...attempts].slice(0, 2000);
     try {
       localStorage.setItem(STORAGE_KEYS.ATTEMPTS, JSON.stringify(updated));
     } catch (e) {
@@ -40,9 +73,8 @@ export const storageService = {
     }
   },
 
-  getMistakes(): UserAnswerAttempt[] {
-    const attempts = this.getAttempts();
-    // Group by questionId, if most recent attempt is incorrect
+  getMistakes(bookId?: BookId | 'ALL'): UserAnswerAttempt[] {
+    const attempts = this.getAttempts(bookId);
     const latestByQ = new Map<string, UserAnswerAttempt>();
     for (const att of attempts) {
       if (!latestByQ.has(att.questionId)) {
@@ -52,39 +84,58 @@ export const storageService = {
     return Array.from(latestByQ.values()).filter((att) => !att.isCorrect);
   },
 
-  // Completed Lessons
-  getCompletedLessons(): string[] {
+  // Completed Lessons / Topics (Isolated by bookId)
+  getCompletedLessons(bookId?: BookId): string[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.COMPLETED_LESSONS);
-      return data ? JSON.parse(data) : [];
+      const targetBook = bookId || this.getActiveBookId();
+      const key = `${STORAGE_KEYS.COMPLETED_LESSONS}_${targetBook}`;
+      const data = localStorage.getItem(key);
+      if (data) return JSON.parse(data);
+      // Fallback for legacy Peterson key
+      if (targetBook === 'PETERSONS-CBT-SUCCESS') {
+        const legacyData = localStorage.getItem(STORAGE_KEYS.COMPLETED_LESSONS);
+        return legacyData ? JSON.parse(legacyData) : [];
+      }
+      return [];
     } catch {
       return [];
     }
   },
 
-  markLessonComplete(lessonId: string): void {
-    const current = new Set(this.getCompletedLessons());
+  markLessonComplete(lessonId: string, bookId?: BookId): void {
+    const targetBook = bookId || this.getActiveBookId();
+    const current = new Set(this.getCompletedLessons(targetBook));
     current.add(lessonId);
+    const key = `${STORAGE_KEYS.COMPLETED_LESSONS}_${targetBook}`;
     try {
-      localStorage.setItem(STORAGE_KEYS.COMPLETED_LESSONS, JSON.stringify(Array.from(current)));
+      localStorage.setItem(key, JSON.stringify(Array.from(current)));
+      if (targetBook === 'PETERSONS-CBT-SUCCESS') {
+        localStorage.setItem(STORAGE_KEYS.COMPLETED_LESSONS, JSON.stringify(Array.from(current)));
+      }
     } catch (e) {
       console.error(e);
     }
   },
 
   // Test Results
-  getTestResults(): TestResultRecord[] {
+  getTestResults(bookId?: BookId | 'ALL'): TestResultRecord[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.TEST_RESULTS);
-      return data ? JSON.parse(data) : [];
+      const list: TestResultRecord[] = data ? JSON.parse(data) : [];
+      if (!bookId || bookId === 'ALL') return list;
+      return list.filter((r) => (r.sourceBookId || 'PETERSONS-CBT-SUCCESS') === bookId);
     } catch {
       return [];
     }
   },
 
   saveTestResult(result: TestResultRecord): void {
-    const list = this.getTestResults();
-    list.unshift(result);
+    const list = this.getTestResults('ALL');
+    const enriched = {
+      ...result,
+      sourceBookId: result.sourceBookId || this.getActiveBookId(),
+    };
+    list.unshift(enriched);
     try {
       localStorage.setItem(STORAGE_KEYS.TEST_RESULTS, JSON.stringify(list));
     } catch (e) {
@@ -93,18 +144,24 @@ export const storageService = {
   },
 
   // TWE
-  getTweSubmissions(): TweSubmission[] {
+  getTweSubmissions(bookId?: BookId | 'ALL'): TweSubmission[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.TWE_SUBMISSIONS);
-      return data ? JSON.parse(data) : [];
+      const list: TweSubmission[] = data ? JSON.parse(data) : [];
+      if (!bookId || bookId === 'ALL') return list;
+      return list.filter((s) => (s.sourceBookId || 'PETERSONS-CBT-SUCCESS') === bookId);
     } catch {
       return [];
     }
   },
 
   saveTweSubmission(sub: TweSubmission): void {
-    const list = this.getTweSubmissions();
-    list.unshift(sub);
+    const list = this.getTweSubmissions('ALL');
+    const enriched = {
+      ...sub,
+      sourceBookId: sub.sourceBookId || this.getActiveBookId(),
+    };
+    list.unshift(enriched);
     try {
       localStorage.setItem(STORAGE_KEYS.TWE_SUBMISSIONS, JSON.stringify(list));
     } catch (e) {
@@ -113,23 +170,29 @@ export const storageService = {
   },
 
   // Bookmarks
-  getBookmarks(): Bookmark[] {
+  getBookmarks(bookId?: BookId | 'ALL'): Bookmark[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.BOOKMARKS);
-      return data ? JSON.parse(data) : [];
+      const list: Bookmark[] = data ? JSON.parse(data) : [];
+      if (!bookId || bookId === 'ALL') return list;
+      return list.filter((b) => (b.sourceBookId || 'PETERSONS-CBT-SUCCESS') === bookId);
     } catch {
       return [];
     }
   },
 
   toggleBookmark(bookmark: Bookmark): boolean {
-    const list = this.getBookmarks();
-    const idx = list.findIndex((b) => b.targetId === bookmark.targetId);
+    const list = this.getBookmarks('ALL');
+    const enriched: Bookmark = {
+      ...bookmark,
+      sourceBookId: bookmark.sourceBookId || this.getActiveBookId(),
+    };
+    const idx = list.findIndex((b) => b.targetId === enriched.targetId);
     let isAdded = false;
     if (idx >= 0) {
       list.splice(idx, 1);
     } else {
-      list.unshift(bookmark);
+      list.unshift(enriched);
       isAdded = true;
     }
     try {
@@ -141,26 +204,32 @@ export const storageService = {
   },
 
   isBookmarked(targetId: string): boolean {
-    return this.getBookmarks().some((b) => b.targetId === targetId);
+    return this.getBookmarks('ALL').some((b) => b.targetId === targetId);
   },
 
   // Notes
-  getNotes(): NoteItem[] {
+  getNotes(bookId?: BookId | 'ALL'): NoteItem[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.NOTES);
-      return data ? JSON.parse(data) : [];
+      const list: NoteItem[] = data ? JSON.parse(data) : [];
+      if (!bookId || bookId === 'ALL') return list;
+      return list.filter((n) => (n.sourceBookId || 'PETERSONS-CBT-SUCCESS') === bookId);
     } catch {
       return [];
     }
   },
 
   saveNote(note: NoteItem): void {
-    const notes = this.getNotes();
-    const idx = notes.findIndex((n) => n.id === note.id || n.targetId === note.targetId);
+    const notes = this.getNotes('ALL');
+    const enriched: NoteItem = {
+      ...note,
+      sourceBookId: note.sourceBookId || this.getActiveBookId(),
+    };
+    const idx = notes.findIndex((n) => n.id === enriched.id || n.targetId === enriched.targetId);
     if (idx >= 0) {
-      notes[idx] = note;
+      notes[idx] = enriched;
     } else {
-      notes.unshift(note);
+      notes.unshift(enriched);
     }
     try {
       localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
@@ -170,7 +239,7 @@ export const storageService = {
   },
 
   deleteNote(id: string): void {
-    const notes = this.getNotes().filter((n) => n.id !== id);
+    const notes = this.getNotes('ALL').filter((n) => n.id !== id);
     try {
       localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
     } catch (e) {
@@ -178,19 +247,31 @@ export const storageService = {
     }
   },
 
-  // Navigation resume
-  getLastLocation(): { tab: string; lessonId?: string; testId?: string } | null {
+  // Navigation resume per book
+  getLastLocation(bookId?: BookId): { tab: string; lessonId?: string; testId?: string; bookId?: BookId } | null {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.LAST_LOCATION);
-      return data ? JSON.parse(data) : null;
+      const targetBook = bookId || this.getActiveBookId();
+      const key = `${STORAGE_KEYS.LAST_LOCATION}_${targetBook}`;
+      const data = localStorage.getItem(key);
+      if (data) return JSON.parse(data);
+      if (targetBook === 'PETERSONS-CBT-SUCCESS') {
+        const legacy = localStorage.getItem(STORAGE_KEYS.LAST_LOCATION);
+        return legacy ? JSON.parse(legacy) : null;
+      }
+      return null;
     } catch {
       return null;
     }
   },
 
-  setLastLocation(loc: { tab: string; lessonId?: string; testId?: string }): void {
+  setLastLocation(loc: { tab: string; lessonId?: string; testId?: string; bookId?: BookId }): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.LAST_LOCATION, JSON.stringify(loc));
+      const targetBook = loc.bookId || this.getActiveBookId();
+      const key = `${STORAGE_KEYS.LAST_LOCATION}_${targetBook}`;
+      localStorage.setItem(key, JSON.stringify({ ...loc, bookId: targetBook }));
+      if (targetBook === 'PETERSONS-CBT-SUCCESS') {
+        localStorage.setItem(STORAGE_KEYS.LAST_LOCATION, JSON.stringify(loc));
+      }
     } catch (e) {
       console.error(e);
     }

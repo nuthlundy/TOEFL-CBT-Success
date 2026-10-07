@@ -1,12 +1,13 @@
 /**
  * TOEFL CBT SUCCESS - Interactive Digital Learning System
- * Main Application Orchestrator
+ * Main Application Orchestrator with Multi-Book Support
  */
 
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { DashboardView } from './components/dashboard/DashboardView';
+import { BookLibraryView } from './components/books/BookLibraryView';
 import { GettingStartedView } from './components/gettingStarted/GettingStartedView';
 import { SectionLessonsView } from './components/curriculum/SectionLessonsView';
 import { LessonPlayer } from './components/lessons/LessonPlayer';
@@ -23,9 +24,8 @@ import { AuditCoverageView } from './components/audit/AuditCoverageView';
 import { GlobalSearchModal } from './components/tools/GlobalSearchModal';
 
 import { storageService } from './services/storageService';
+import { bookContentService } from './services/bookContentService';
 import { ALL_LESSONS } from './data/lessonsData';
-import { MINI_TESTS } from './data/miniTestsData';
-import { PRACTICE_TESTS } from './data/practiceTestsData';
 import {
   Bookmark,
   NoteItem,
@@ -34,9 +34,11 @@ import {
   UserAnswerAttempt,
   MiniTest,
   PracticeTest,
+  BookId,
 } from './types/toefl';
 
 export default function App() {
+  const [activeBookId, setActiveBookId] = useState<BookId>(() => storageService.getActiveBookId());
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [activeTestConfig, setActiveTestConfig] = useState<{
@@ -57,18 +59,24 @@ export default function App() {
   const [dailyMinutes, setDailyMinutes] = useState<number>(0);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [lastLocation, setLastLocation] = useState<{ tab: string; lessonId?: string; testId?: string } | null>(null);
+  const [lastLocation, setLastLocation] = useState<{ tab: string; lessonId?: string; testId?: string; bookId?: BookId } | null>(null);
 
-  // Initialize from storage
+  const allBooks = bookContentService.getBooks();
+  const currentLessons = bookContentService.getLessons(activeBookId);
+  const currentMiniTests = bookContentService.getMiniTests(activeBookId);
+  const currentPracticeTests = bookContentService.getPracticeTests(activeBookId);
+  const currentBookMetadata = bookContentService.getBookMetadata(activeBookId);
+
+  // Initialize from storage for the active book
   useEffect(() => {
-    setCompletedLessons(storageService.getCompletedLessons());
-    setAttempts(storageService.getAttempts());
-    setTestResults(storageService.getTestResults());
-    setTweSubmissions(storageService.getTweSubmissions());
-    setBookmarks(storageService.getBookmarks());
-    setNotes(storageService.getNotes());
+    setCompletedLessons(storageService.getCompletedLessons(activeBookId));
+    setAttempts(storageService.getAttempts(activeBookId));
+    setTestResults(storageService.getTestResults(activeBookId));
+    setTweSubmissions(storageService.getTweSubmissions(activeBookId));
+    setBookmarks(storageService.getBookmarks(activeBookId));
+    setNotes(storageService.getNotes(activeBookId));
     setDailyMinutes(storageService.getDailyTimeSpent());
-    setLastLocation(storageService.getLastLocation());
+    setLastLocation(storageService.getLastLocation(activeBookId));
 
     // Timer heartbeat for 30-min daily target
     const interval = setInterval(() => {
@@ -77,7 +85,20 @@ export default function App() {
     }, 60000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [activeBookId]);
+
+  // Book Selection Handler
+  const handleSelectBook = (bookId: BookId) => {
+    storageService.setActiveBookId(bookId);
+    setActiveBookId(bookId);
+    setCompletedLessons(storageService.getCompletedLessons(bookId));
+    setAttempts(storageService.getAttempts(bookId));
+    setTestResults(storageService.getTestResults(bookId));
+    setTweSubmissions(storageService.getTweSubmissions(bookId));
+    setBookmarks(storageService.getBookmarks(bookId));
+    setNotes(storageService.getNotes(bookId));
+    setLastLocation(storageService.getLastLocation(bookId));
+  };
 
   // Sync tab with URL hash/route on load & on hashchange / popstate
   useEffect(() => {
@@ -90,8 +111,11 @@ export default function App() {
 
       if (route.startsWith('lesson/')) {
         const lid = route.replace('lesson/', '');
-        const exists = ALL_LESSONS.some((l) => l.id === lid);
-        if (exists) {
+        const found = bookContentService.getLessonById(lid);
+        if (found) {
+          if (found.sourceBookId && found.sourceBookId !== activeBookId) {
+            handleSelectBook(found.sourceBookId);
+          }
           setActiveLessonId(lid);
           setActiveTab('lesson-player');
           return;
@@ -100,6 +124,7 @@ export default function App() {
 
       const validTabs = [
         'dashboard',
+        'books',
         'getting-started',
         'listening',
         'structure',
@@ -129,7 +154,7 @@ export default function App() {
       window.removeEventListener('hashchange', parseUrlRoute);
       window.removeEventListener('popstate', parseUrlRoute);
     };
-  }, []);
+  }, [activeBookId]);
 
   // Keyboard shortcut for Cmd+K search
   useEffect(() => {
@@ -148,8 +173,8 @@ export default function App() {
     setActiveTab(tab);
     setActiveLessonId(null);
     setActiveTestConfig(null);
-    storageService.setLastLocation({ tab });
-    setLastLocation({ tab });
+    storageService.setLastLocation({ tab, bookId: activeBookId });
+    setLastLocation({ tab, bookId: activeBookId });
     if (window.location.hash !== `#${tab}`) {
       window.history.pushState(null, '', `#${tab}`);
     }
@@ -157,17 +182,21 @@ export default function App() {
   };
 
   const handleStartLesson = (lessonId: string) => {
+    const lessonObj = bookContentService.getLessonById(lessonId);
+    if (lessonObj && lessonObj.sourceBookId && lessonObj.sourceBookId !== activeBookId) {
+      handleSelectBook(lessonObj.sourceBookId);
+    }
     setActiveLessonId(lessonId);
     setActiveTab('lesson-player');
-    storageService.setLastLocation({ tab: 'lesson-player', lessonId });
-    setLastLocation({ tab: 'lesson-player', lessonId });
+    storageService.setLastLocation({ tab: 'lesson-player', lessonId, bookId: lessonObj?.sourceBookId || activeBookId });
+    setLastLocation({ tab: 'lesson-player', lessonId, bookId: lessonObj?.sourceBookId || activeBookId });
     window.history.pushState(null, '', `#lesson/${lessonId}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCompleteLesson = (lessonId: string) => {
-    storageService.markLessonComplete(lessonId);
-    setCompletedLessons(storageService.getCompletedLessons());
+    storageService.markLessonComplete(lessonId, activeBookId);
+    setCompletedLessons(storageService.getCompletedLessons(activeBookId));
   };
 
   const handleRecordAttempt = (
@@ -187,22 +216,24 @@ export default function App() {
       skill,
       sourcePage: page,
       lessonId: activeLessonId || undefined,
+      sourceBookId: activeBookId,
     };
     storageService.recordAttempt(attempt);
-    setAttempts(storageService.getAttempts());
+    setAttempts(storageService.getAttempts(activeBookId));
   };
 
   const handleToggleBookmark = (id: string, title: string) => {
     const bookmark: Bookmark = {
       id: `bm_${id}`,
-      type: id.includes('L') || id.includes('lesson') ? 'lesson' : 'question',
+      type: id.includes('L') || id.includes('lesson') || id.includes('GRAMMAR') || id.includes('STYLE') ? 'lesson' : 'question',
       targetId: id,
       title,
       section: 'structure',
       createdAt: Date.now(),
+      sourceBookId: activeBookId,
     };
     storageService.toggleBookmark(bookmark);
-    setBookmarks(storageService.getBookmarks());
+    setBookmarks(storageService.getBookmarks(activeBookId));
   };
 
   const isBookmarked = (id: string) => {
@@ -217,14 +248,15 @@ export default function App() {
       content,
       section: 'structure',
       updatedAt: Date.now(),
+      sourceBookId: activeBookId,
     };
     storageService.saveNote(note);
-    setNotes(storageService.getNotes());
+    setNotes(storageService.getNotes(activeBookId));
   };
 
   const handleDeleteNote = (id: string) => {
     storageService.deleteNote(id);
-    setNotes(storageService.getNotes());
+    setNotes(storageService.getNotes(activeBookId));
   };
 
   const [returnTabAfterTest, setReturnTabAfterTest] = useState<string>('dashboard');
@@ -279,8 +311,12 @@ export default function App() {
   };
 
   const handleFinishTest = (record: TestResultRecord) => {
-    storageService.saveTestResult(record);
-    setTestResults(storageService.getTestResults());
+    const recordWithBook: TestResultRecord = {
+      ...record,
+      sourceBookId: activeBookId,
+    };
+    storageService.saveTestResult(recordWithBook);
+    setTestResults(storageService.getTestResults(activeBookId));
 
     // Record individual attempts for mistake log
     for (const [qId, ans] of Object.entries(record.answers)) {
@@ -294,20 +330,28 @@ export default function App() {
           section: qId.includes('L') ? 'listening' : qId.includes('R') ? 'reading' : 'structure',
           skill: q.skill,
           sourcePage: q.sourcePage,
+          sourceBookId: activeBookId,
         };
         storageService.recordAttempt(attempt);
       }
     }
-    setAttempts(storageService.getAttempts());
+    setAttempts(storageService.getAttempts(activeBookId));
   };
 
   const handleSaveTweSubmission = (sub: TweSubmission) => {
-    storageService.saveTweSubmission(sub);
-    setTweSubmissions(storageService.getTweSubmissions());
+    const subWithBook: TweSubmission = {
+      ...sub,
+      sourceBookId: activeBookId,
+    };
+    storageService.saveTweSubmission(subWithBook);
+    setTweSubmissions(storageService.getTweSubmissions(activeBookId));
   };
 
   const handleResumeLast = () => {
     if (lastLocation) {
+      if (lastLocation.bookId && lastLocation.bookId !== activeBookId) {
+        handleSelectBook(lastLocation.bookId);
+      }
       if (lastLocation.lessonId) {
         handleStartLesson(lastLocation.lessonId);
       } else {
@@ -317,7 +361,10 @@ export default function App() {
   };
 
   // Find active lesson object
-  const activeLesson = ALL_LESSONS.find((l) => l.id === activeLessonId) || ALL_LESSONS[0];
+  const activeLesson =
+    (activeLessonId ? bookContentService.getLessonById(activeLessonId, activeBookId) : null) ||
+    currentLessons[0] ||
+    ALL_LESSONS[0];
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
@@ -329,6 +376,9 @@ export default function App() {
         onResumeLast={handleResumeLast}
         hasResume={!!lastLocation}
         onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        activeBookId={activeBookId}
+        books={allBooks}
+        onSelectBook={handleSelectBook}
       />
 
       {/* Main Split Layout: Sidebar + View Content */}
@@ -340,12 +390,19 @@ export default function App() {
           bookmarksCount={bookmarks.length}
           isMobileOpen={isMobileMenuOpen}
           onCloseMobile={() => setIsMobileMenuOpen(false)}
+          activeBookId={activeBookId}
+          books={allBooks}
+          onSelectBook={handleSelectBook}
         />
 
         {/* Scrollable Content Stage */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           {activeTab === 'dashboard' && (
             <DashboardView
+              activeBookId={activeBookId}
+              books={allBooks}
+              onSelectBook={handleSelectBook}
+              lessons={currentLessons}
               completedLessons={completedLessons}
               attempts={attempts}
               testResults={testResults}
@@ -355,9 +412,19 @@ export default function App() {
               onNavigateTab={handleSelectTab}
               onStartLesson={handleStartLesson}
               onStartPracticeTest={(testId) => {
-                const pt = PRACTICE_TESTS.find((t) => t.id === testId);
-                if (pt) handleStartFullPracticeTest(pt);
+                const pt = currentPracticeTests.find((t) => t.id === testId) || currentPracticeTests[0];
+                if (pt) handleStartFullPracticeTest(pt, 'dashboard');
               }}
+            />
+          )}
+
+          {activeTab === 'books' && (
+            <BookLibraryView
+              books={allBooks}
+              activeBookId={activeBookId}
+              onSelectBook={handleSelectBook}
+              getCompletedCount={(bId) => storageService.getCompletedLessons(bId).length}
+              onContinueStudying={() => handleSelectTab('dashboard')}
             />
           )}
 
@@ -370,6 +437,8 @@ export default function App() {
               onStartLesson={handleStartLesson}
               onToggleBookmark={handleToggleBookmark}
               isBookmarked={isBookmarked}
+              lessons={currentLessons}
+              activeBookId={activeBookId}
             />
           )}
 
@@ -380,6 +449,8 @@ export default function App() {
               onStartLesson={handleStartLesson}
               onToggleBookmark={handleToggleBookmark}
               isBookmarked={isBookmarked}
+              lessons={currentLessons}
+              activeBookId={activeBookId}
             />
           )}
 
@@ -390,6 +461,8 @@ export default function App() {
               onStartLesson={handleStartLesson}
               onToggleBookmark={handleToggleBookmark}
               isBookmarked={isBookmarked}
+              lessons={currentLessons}
+              activeBookId={activeBookId}
             />
           )}
 
@@ -413,6 +486,9 @@ export default function App() {
             <MiniTestsView
               onStartMiniTest={handleStartMiniTest}
               testResults={testResults}
+              miniTests={currentMiniTests}
+              activeBookId={activeBookId}
+              bookTitle={currentBookMetadata.title}
             />
           )}
 
@@ -421,6 +497,9 @@ export default function App() {
               onStartFullTest={(pt) => handleStartFullPracticeTest(pt, 'practice-tests')}
               onStartSectionTest={handleStartSectionPracticeTest}
               testResults={testResults}
+              practiceTests={currentPracticeTests}
+              activeBookId={activeBookId}
+              bookTitle={currentBookMetadata.title}
             />
           )}
 
@@ -440,6 +519,7 @@ export default function App() {
             <TweWorkspace
               onSaveSubmission={handleSaveTweSubmission}
               submissions={tweSubmissions}
+              activeBookId={activeBookId}
             />
           )}
 
@@ -448,6 +528,7 @@ export default function App() {
               attempts={attempts}
               onToggleBookmark={handleToggleBookmark}
               isBookmarked={isBookmarked}
+              activeBookId={activeBookId}
             />
           )}
 
@@ -458,6 +539,10 @@ export default function App() {
               tweSubmissions={tweSubmissions}
               completedLessons={completedLessons}
               onNavigateToMistakes={() => handleSelectTab('mistakes')}
+              activeBookId={activeBookId}
+              books={allBooks}
+              onSelectBook={handleSelectBook}
+              lessons={currentLessons}
             />
           )}
 
@@ -465,6 +550,7 @@ export default function App() {
             <BookmarksView
               bookmarks={bookmarks}
               onRemoveBookmark={handleToggleBookmark}
+              activeBookId={activeBookId}
               onNavigateToTarget={(b) => {
                 if (b.type === 'lesson') {
                   handleStartLesson(b.targetId);
@@ -478,9 +564,10 @@ export default function App() {
           {activeTab === 'notes' && (
             <NotesView
               notes={notes}
+              activeBookId={activeBookId}
               onSaveNote={(note) => {
                 storageService.saveNote(note);
-                setNotes(storageService.getNotes());
+                setNotes(storageService.getNotes(activeBookId));
               }}
               onDeleteNote={handleDeleteNote}
             />
@@ -496,8 +583,12 @@ export default function App() {
       <GlobalSearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
-        onSelectResult={(tab, id) => {
-          if (id && id.includes('lesson')) {
+        activeBookId={activeBookId}
+        onSelectResult={(tab, id, bookId) => {
+          if (bookId && bookId !== activeBookId) {
+            handleSelectBook(bookId);
+          }
+          if (id && (id.includes('lesson') || id.includes('GRAMMAR') || id.includes('STYLE') || id.includes('LISTEN') || id.includes('READ'))) {
             handleStartLesson(id);
           } else {
             handleSelectTab(tab);

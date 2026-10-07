@@ -1,39 +1,30 @@
 /**
- * Global Search Modal
- * Searches across all lessons, concepts, grammar topics, vocabulary items, and TWE prompts.
+ * Global Multi-Book Search Modal
+ * Searches across all 3 source books (Peterson, Cliffs Prep Guide, Cliffs CBT)
+ * Includes Book and Content Type filter controls.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, BookOpen, Headphones, FileCode, PenTool, ArrowRight } from 'lucide-react';
-import { ALL_LESSONS } from '../../data/lessonsData';
-import {
-  SECTION1_MINI_LESSONS,
-  SECTION2_MINI_LESSONS,
-  SECTION3_MINI_LESSONS,
-} from '../../data/miniLessonsData';
-import { TWE_PRACTICE_TOPICS } from '../../data/tweData';
-
-interface SearchResult {
-  id: string;
-  type: 'lesson' | 'vocabulary' | 'grammar' | 'twe';
-  title: string;
-  subtitle: string;
-  targetTab: string;
-  targetId?: string;
-}
+import { Search, X, BookOpen, Headphones, FileCode, PenTool, CheckSquare, Award, ArrowRight, Layers } from 'lucide-react';
+import { BookId } from '../../types/toefl';
+import { bookContentService } from '../../services/bookContentService';
 
 interface GlobalSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectResult: (targetTab: string, targetId?: string) => void;
+  onSelectResult: (targetTab: string, targetId?: string, bookId?: BookId) => void;
+  activeBookId: BookId;
 }
 
 export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   isOpen,
   onClose,
   onSelectResult,
+  activeBookId,
 }) => {
   const [query, setQuery] = useState('');
+  const [selectedBook, setSelectedBook] = useState<BookId | 'ALL'>('ALL');
+  const [selectedType, setSelectedType] = useState<string>('ALL');
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -46,159 +37,200 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Search logic
-  const q = query.trim().toLowerCase();
-  const results: SearchResult[] = [];
+  const results = bookContentService.searchContent(query, selectedBook, selectedType);
 
-  if (q.length >= 2) {
-    // 1. Search core lessons
-    for (const l of ALL_LESSONS) {
-      if (
-        l.title.toLowerCase().includes(q) ||
-        l.objective.toLowerCase().includes(q) ||
-        l.summary.toLowerCase().includes(q) ||
-        l.part.toLowerCase().includes(q)
-      ) {
-        results.push({
-          id: l.id,
-          type: 'lesson',
-          title: `Lesson ${l.lessonNumber}: ${l.title}`,
-          subtitle: `${l.part} · Book pp. ${l.sourcePages.join('-')}`,
-          targetTab: l.section,
-          targetId: l.id,
-        });
-      }
-    }
-
-    // 2. Search vocabulary mini-lessons
-    for (const ml of SECTION3_MINI_LESSONS) {
-      if (ml.terms) {
-        for (const t of ml.terms) {
-          if (t.term.toLowerCase().includes(q) || t.definition.toLowerCase().includes(q)) {
-            results.push({
-              id: `${ml.id}_${t.term}`,
-              type: 'vocabulary',
-              title: `${t.term} ${t.pos || ''}`,
-              subtitle: `Definition: ${t.definition} (Mini-Lesson ${ml.number})`,
-              targetTab: 'reading',
-              targetId: ml.id,
-            });
-          }
-        }
-      }
-    }
-
-    // 3. Search idioms mini-lessons
-    for (const ml of SECTION1_MINI_LESSONS) {
-      if (ml.terms) {
-        for (const t of ml.terms) {
-          if (t.term.toLowerCase().includes(q) || t.definition.toLowerCase().includes(q)) {
-            results.push({
-              id: `${ml.id}_${t.term}`,
-              type: 'grammar',
-              title: `Idiom: "${t.term}"`,
-              subtitle: `Meaning: ${t.definition} (Mini-Lesson ${ml.number})`,
-              targetTab: 'listening',
-              targetId: ml.id,
-            });
-          }
-        }
-      }
-    }
-
-    // 4. Search TWE topics
-    for (const t of TWE_PRACTICE_TOPICS) {
-      if (t.title.toLowerCase().includes(q) || t.prompt.toLowerCase().includes(q)) {
-        results.push({
-          id: t.id,
-          type: 'twe',
-          title: `TWE Topic ${t.topicNumber}: ${t.title}`,
-          subtitle: `Book p. ${t.sourcePage}`,
-          targetTab: 'twe',
-          targetId: t.id,
-        });
-      }
-    }
-  }
-
-  const getIcon = (type: SearchResult['type']) => {
+  const getTypeIcon = (type: string) => {
     switch (type) {
       case 'lesson':
+      case 'topic':
         return BookOpen;
-      case 'vocabulary':
-        return BookOpen;
-      case 'grammar':
-        return FileCode;
-      case 'twe':
+      case 'test':
+        return Award;
+      case 'writing':
         return PenTool;
+      default:
+        return FileCode;
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-start justify-center pt-20 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[80vh]">
-        {/* Search Input Box */}
-        <div className="p-4 border-b border-slate-200 flex items-center gap-3">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-6 md:p-20 overflow-y-auto bg-slate-950/70 backdrop-blur-xs">
+      <div
+        className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-150"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Search Input Bar */}
+        <div className="p-4 border-b border-slate-100 flex items-center gap-3">
           <Search className="w-5 h-5 text-slate-400 shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search lessons, grammar rules, vocabulary, idioms, TWE topics..."
-            className="w-full text-sm focus:outline-none placeholder:text-slate-400"
+            placeholder="Search all lessons, grammar rules, mini-tests, passages, vocabulary, or writing topics..."
+            className="w-full text-sm sm:text-base text-slate-900 placeholder-slate-400 focus:outline-none bg-transparent"
           />
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+            className="px-2 py-1 text-xs font-semibold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5" />
+            ESC
           </button>
         </div>
 
+        {/* Filter Controls Bar */}
+        <div className="p-3 bg-slate-50 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+          {/* Book Filter */}
+          <div className="flex items-center gap-1 overflow-x-auto">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1">
+              Book:
+            </span>
+            <button
+              onClick={() => setSelectedBook('ALL')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
+                selectedBook === 'ALL'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200/80'
+              }`}
+            >
+              All Books
+            </button>
+            <button
+              onClick={() => setSelectedBook('PETERSONS-CBT-SUCCESS')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
+                selectedBook === 'PETERSONS-CBT-SUCCESS'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200/80'
+              }`}
+            >
+              Peterson's CBT
+            </button>
+            <button
+              onClick={() => setSelectedBook('CLIFFS-TOEFL-PREPARATION-GUIDE')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
+                selectedBook === 'CLIFFS-TOEFL-PREPARATION-GUIDE'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200/80'
+              }`}
+            >
+              Cliffs Prep
+            </button>
+            <button
+              onClick={() => setSelectedBook('CLIFFS-TOEFL-CBT')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
+                selectedBook === 'CLIFFS-TOEFL-CBT'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200/80'
+              }`}
+            >
+              Cliffs CBT
+            </button>
+          </div>
+
+          {/* Type Filter */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setSelectedType('ALL')}
+              className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+                selectedType === 'ALL' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              All Types
+            </button>
+            <button
+              onClick={() => setSelectedType('lessons')}
+              className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+                selectedType === 'lessons' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Lessons/Topics
+            </button>
+            <button
+              onClick={() => setSelectedType('tests')}
+              className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+                selectedType === 'tests' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Tests
+            </button>
+            <button
+              onClick={() => setSelectedType('writing')}
+              className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+                selectedType === 'writing' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Writing
+            </button>
+          </div>
+        </div>
+
         {/* Results List */}
-        <div className="overflow-y-auto p-3 flex-1 divide-y divide-slate-100">
-          {q.length >= 2 ? (
-            results.length > 0 ? (
-              results.map((res) => {
-                const Icon = getIcon(res.type);
-                return (
-                  <div
-                    key={res.id}
-                    onClick={() => {
-                      onSelectResult(res.targetTab, res.targetId);
-                      onClose();
-                    }}
-                    className="p-3 rounded-xl hover:bg-slate-50 cursor-pointer flex items-center justify-between transition-colors group"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
-                          {res.title}
-                        </h4>
-                        <p className="text-xs text-slate-500 line-clamp-1">{res.subtitle}</p>
-                      </div>
+        <div className="max-h-[60vh] overflow-y-auto p-3 divide-y divide-slate-100">
+          {query.trim().length < 2 ? (
+            <div className="text-center py-12 text-slate-400 text-xs">
+              Type at least 2 characters to search across all curriculum lessons, tests, and writing models.
+            </div>
+          ) : results.length > 0 ? (
+            results.map((res) => {
+              const Icon = getTypeIcon(res.contentType);
+              return (
+                <div
+                  key={`${res.bookId}_${res.id}`}
+                  onClick={() => {
+                    onSelectResult(res.targetTab, res.targetId, res.bookId);
+                    onClose();
+                  }}
+                  className="p-3 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors flex items-center justify-between gap-4 group"
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="p-2 rounded-lg bg-blue-50 text-blue-700 mt-0.5 shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                      <Icon className="w-4 h-4" />
                     </div>
-                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-colors shrink-0" />
+                    <div className="min-w-0 space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900 truncate">
+                          {res.title}
+                        </span>
+                        <span className="px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded text-[10px] font-mono shrink-0">
+                          {res.bookTitle}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 line-clamp-1">
+                        {res.snippet}
+                      </p>
+                    </div>
                   </div>
-                );
-              })
-            ) : (
-              <div className="py-12 text-center text-xs text-slate-500">
-                No matching lessons or terms found for "{query}".
-              </div>
-            )
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {res.sourcePage && (
+                      <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
+                        p. {res.sourcePage}
+                      </span>
+                    )}
+                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                </div>
+              );
+            })
           ) : (
-            <div className="py-10 text-center text-xs text-slate-400 space-y-1">
-              <p>Type at least 2 characters to search.</p>
-              <p className="text-[11px] text-slate-400">
-                Try searching: "appositives", "antler", "idiom", "adverb clause", "inversion"
-              </p>
+            <div className="text-center py-12 text-slate-400 text-xs">
+              No results found for "{query}". Try searching for terms like "subjunctive", "conditionals", "dialogs", or "passage".
             </div>
           )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-3 bg-slate-50 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
+          <span>Search spans 3 preparation guides: Peterson's CBT, Cliffs Prep, Cliffs CBT</span>
+          <span>Press ESC to dismiss</span>
         </div>
       </div>
     </div>

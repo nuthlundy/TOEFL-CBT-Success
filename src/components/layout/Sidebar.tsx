@@ -1,6 +1,6 @@
 /**
  * Sidebar Navigation Component
- * Provides clean, comprehensive navigation across all book sections and study tools
+ * Provides clean, multi-book navigation across curriculum sections and assessments
  */
 
 import React from 'react';
@@ -19,7 +19,9 @@ import {
   Info,
   ShieldCheck,
   RotateCcw,
+  Library,
 } from 'lucide-react';
+import { BookId, BookMetadata } from '../../types/toefl';
 
 interface SidebarProps {
   activeTab: string;
@@ -28,6 +30,9 @@ interface SidebarProps {
   bookmarksCount: number;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
+  activeBookId: BookId;
+  books: BookMetadata[];
+  onSelectBook: (bookId: BookId) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -37,13 +42,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   bookmarksCount,
   isMobileOpen = false,
   onCloseMobile,
+  activeBookId,
+  books,
+  onSelectBook,
 }) => {
+  const currentBook = books.find((b) => b.id === activeBookId) || books[0];
+  const miniTestCount = currentBook.totalMiniTests || (activeBookId === 'PETERSONS-CBT-SUCCESS' ? 8 : 6);
+
   const navSections = [
     {
-      label: 'Main',
+      label: 'Main & Library',
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'getting-started', label: 'Getting Started', icon: Compass },
+        { id: 'books', label: 'Book Library (3 Sources)', icon: Library },
+        { id: 'getting-started', label: 'Study Guide & Strategy', icon: Compass },
       ],
     },
     {
@@ -58,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       label: 'Assessments',
       items: [
-        { id: 'mini-tests', label: 'Mini-Tests (1–8)', icon: CheckSquare },
+        { id: 'mini-tests', label: `Mini-Tests (1–${miniTestCount})`, icon: CheckSquare },
         { id: 'practice-tests', label: 'Full Practice Tests', icon: Award },
       ],
     },
@@ -85,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'System & Reference',
       items: [
         { id: 'audit', label: 'Content Coverage & Audit', icon: ShieldCheck },
-        { id: 'about', label: 'About Peterson’s CBT', icon: Info },
+        { id: 'about', label: 'About Preparation Guides', icon: Info },
       ],
     },
   ];
@@ -105,6 +117,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
           isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
+        {/* Active Book Switcher Banner in Sidebar */}
+        <div className="p-3.5 mx-3 mt-3 bg-slate-800/80 border border-slate-700/80 rounded-xl space-y-1.5">
+          <div className="flex items-center justify-between text-[11px] text-slate-400">
+            <span className="font-semibold uppercase tracking-wider">Active Book</span>
+            <span className="text-[10px] bg-blue-900/60 text-blue-300 font-mono px-1.5 py-0.5 rounded border border-blue-700/40">
+              {currentBook.format}
+            </span>
+          </div>
+          <p className="text-xs font-bold text-white truncate" title={currentBook.title}>
+            {currentBook.shortTitle}
+          </p>
+          <button
+            onClick={() => {
+              onSelectTab('books');
+              onCloseMobile?.();
+            }}
+            className="w-full text-left text-[11px] text-blue-400 hover:text-blue-300 font-medium transition-colors"
+          >
+            Switch Book in Library →
+          </button>
+        </div>
+
         <div className="p-4 flex-1 overflow-y-auto space-y-6">
           {navSections.map((group) => (
             <div key={group.label}>
@@ -155,10 +189,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ))}
         </div>
 
-        {/* Book Citation Footer */}
+        {/* Source Citation Footer */}
         <div className="p-3.5 border-t border-slate-800/80 bg-slate-950/40 text-[11px] text-slate-400">
-          <p className="font-semibold text-slate-300">Peterson’s TOEFL CBT Success</p>
-          <p className="text-slate-500">Author: Bruce Rogers · Thomson Learning</p>
+          <p className="font-semibold text-slate-300 truncate" title={currentBook.title}>
+            {currentBook.shortTitle}
+          </p>
+          <p className="text-slate-500 truncate" title={`Author: ${currentBook.author}`}>
+            {currentBook.author} · {currentBook.publisher}
+          </p>
         </div>
       </aside>
     </>

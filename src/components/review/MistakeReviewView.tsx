@@ -14,48 +14,61 @@ import {
   Volume2,
   BookOpen,
 } from 'lucide-react';
-import { UserAnswerAttempt, Question } from '../../types/toefl';
-import { ALL_LESSONS } from '../../data/lessonsData';
-import { MINI_TESTS } from '../../data/miniTestsData';
-import { PRACTICE_TESTS } from '../../data/practiceTestsData';
+import { UserAnswerAttempt, Question, BookId } from '../../types/toefl';
+import { bookContentService } from '../../services/bookContentService';
 import { ttsService } from '../../services/ttsService';
 
 interface MistakeReviewViewProps {
   attempts: UserAnswerAttempt[];
   onToggleBookmark: (id: string, title: string) => void;
   isBookmarked: (id: string) => boolean;
+  activeBookId?: BookId;
 }
 
 export const MistakeReviewView: React.FC<MistakeReviewViewProps> = ({
   attempts,
   onToggleBookmark,
   isBookmarked,
+  activeBookId = 'PETERSONS-CBT-SUCCESS',
 }) => {
+  const [filterMode, setFilterMode] = useState<'CURRENT' | 'ALL'>('CURRENT');
   const [sectionFilter, setSectionFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'skill'>('recent');
 
-  // Filter only incorrect attempts
-  const incorrectAttempts = attempts.filter((a) => !a.isCorrect);
+  // Filter incorrect attempts by book and section
+  const incorrectAttempts = attempts.filter((a) => {
+    if (a.isCorrect) return false;
+    if (filterMode === 'CURRENT') {
+      return (a.sourceBookId || 'PETERSONS-CBT-SUCCESS') === activeBookId;
+    }
+    return true;
+  });
 
-  // Helper to find the original question from data sources
+  // Helper to find the original question from all data sources
   const findQuestion = (qId: string): Question | undefined => {
-    // 1. Lessons
-    for (const l of ALL_LESSONS) {
-      for (const ex of l.exercises) {
-        const found = ex.questions.find((q) => q.id === qId);
+    const bookIds: BookId[] = ['PETERSONS-CBT-SUCCESS', 'CLIFFS-TOEFL-PREPARATION-GUIDE', 'CLIFFS-TOEFL-CBT'];
+    for (const bId of bookIds) {
+      // 1. Lessons
+      const lessons = bookContentService.getLessons(bId);
+      for (const l of lessons) {
+        for (const ex of l.exercises) {
+          const found = ex.questions.find((q) => q.id === qId);
+          if (found) return found;
+        }
+      }
+      // 2. Mini-tests
+      const miniTests = bookContentService.getMiniTests(bId);
+      for (const mt of miniTests) {
+        const found = mt.questions.find((q) => q.id === qId);
         if (found) return found;
       }
-    }
-    // 2. Mini-tests
-    for (const mt of MINI_TESTS) {
-      const found = mt.questions.find((q) => q.id === qId);
-      if (found) return found;
-    }
-    // 3. Practice tests
-    for (const pt of PRACTICE_TESTS) {
-      for (const secKey of ['listening', 'structure', 'reading'] as const) {
-        const found = pt.sections[secKey].questions.find((q) => q.id === qId);
-        if (found) return found;
+      // 3. Practice tests
+      const practiceTests = bookContentService.getPracticeTests(bId);
+      for (const pt of practiceTests) {
+        for (const secKey of ['listening', 'structure', 'reading'] as const) {
+          const found = pt.sections[secKey]?.questions.find((q) => q.id === qId);
+          if (found) return found;
+        }
       }
     }
     return undefined;
@@ -86,7 +99,32 @@ export const MistakeReviewView: React.FC<MistakeReviewViewProps> = ({
         </div>
 
         {/* Filter Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Book Filter Toggle */}
+          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
+            <button
+              onClick={() => setFilterMode('CURRENT')}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${
+                filterMode === 'CURRENT'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Current Book
+            </button>
+            <button
+              onClick={() => setFilterMode('ALL')}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${
+                filterMode === 'ALL'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              All Books
+            </button>
+          </div>
+
+          {/* Section Filter */}
           <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
             {['all', 'listening', 'structure', 'reading'].map((sec) => (
               <button

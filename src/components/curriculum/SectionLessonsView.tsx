@@ -15,7 +15,7 @@ import {
   ArrowRight,
   Sparkles,
 } from 'lucide-react';
-import { Lesson, SectionType, MiniLesson } from '../../types/toefl';
+import { Lesson, SectionType, MiniLesson, BookId } from '../../types/toefl';
 import { ALL_LESSONS } from '../../data/lessonsData';
 import {
   SECTION1_MINI_LESSONS,
@@ -29,6 +29,8 @@ interface SectionLessonsViewProps {
   onStartLesson: (lessonId: string) => void;
   onToggleBookmark: (id: string, title: string) => void;
   isBookmarked: (id: string) => boolean;
+  lessons?: Lesson[];
+  activeBookId?: BookId;
 }
 
 export const SectionLessonsView: React.FC<SectionLessonsViewProps> = ({
@@ -37,23 +39,27 @@ export const SectionLessonsView: React.FC<SectionLessonsViewProps> = ({
   onStartLesson,
   onToggleBookmark,
   isBookmarked,
+  lessons = ALL_LESSONS,
+  activeBookId = 'PETERSONS-CBT-SUCCESS',
 }) => {
   const [selectedPart, setSelectedPart] = useState<string>('all');
   const [showMiniLessons, setShowMiniLessons] = useState<boolean>(false);
   const [activeMiniLesson, setActiveMiniLesson] = useState<MiniLesson | null>(null);
 
-  const lessons = ALL_LESSONS.filter((l) => l.section === section);
-  const parts = Array.from(new Set(lessons.map((l) => l.part)));
+  const sectionLessons = lessons.filter((l) => l.section === section);
+  const parts = Array.from(new Set(sectionLessons.map((l) => l.part)));
 
-  // Corresponding mini-lessons
+  // Corresponding mini-lessons (for Peterson)
   const miniLessons =
-    section === 'listening'
-      ? SECTION1_MINI_LESSONS
-      : section === 'structure'
-      ? SECTION2_MINI_LESSONS
-      : SECTION3_MINI_LESSONS;
+    activeBookId === 'PETERSONS-CBT-SUCCESS'
+      ? section === 'listening'
+        ? SECTION1_MINI_LESSONS
+        : section === 'structure'
+        ? SECTION2_MINI_LESSONS
+        : SECTION3_MINI_LESSONS
+      : [];
 
-  const filteredLessons = lessons.filter((l) => {
+  const filteredLessons = sectionLessons.filter((l) => {
     if (selectedPart !== 'all' && l.part !== selectedPart) return false;
     return true;
   });
@@ -90,9 +96,9 @@ export const SectionLessonsView: React.FC<SectionLessonsViewProps> = ({
       <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-            <span>Peterson’s Complete Course</span>
+            <span>{activeBookId === 'PETERSONS-CBT-SUCCESS' ? "Peterson's CBT" : activeBookId === 'CLIFFS-TOEFL-PREPARATION-GUIDE' ? 'Cliffs Prep Guide' : 'CliffsTestPrep CBT'}</span>
             <span aria-hidden="true">·</span>
-            <span>{lessons.length} Core Lessons</span>
+            <span>{sectionLessons.length} {activeBookId === 'PETERSONS-CBT-SUCCESS' ? 'Lessons' : 'Topics'}</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">
             {getSectionTitle()}

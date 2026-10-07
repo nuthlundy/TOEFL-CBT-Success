@@ -1,10 +1,11 @@
 /**
  * Top Bar Header Component
- * Strict 3-zone contract: [Brand single text] - [Nav links] - [Primary actions]
+ * Multi-Book aware with Book Switcher and Quick Navigation
  */
 
 import React from 'react';
-import { Search, PlayCircle, ShieldCheck, Menu } from 'lucide-react';
+import { Search, PlayCircle, ShieldCheck, Menu, BookOpen, ChevronDown } from 'lucide-react';
+import { BookId, BookMetadata } from '../../types/toefl';
 
 interface HeaderProps {
   activeTab: string;
@@ -13,6 +14,9 @@ interface HeaderProps {
   onResumeLast: () => void;
   hasResume: boolean;
   onToggleMobileMenu?: () => void;
+  activeBookId: BookId;
+  books: BookMetadata[];
+  onSelectBook: (bookId: BookId) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -22,11 +26,16 @@ export const Header: React.FC<HeaderProps> = ({
   onResumeLast,
   hasResume,
   onToggleMobileMenu,
+  activeBookId,
+  books,
+  onSelectBook,
 }) => {
+  const currentBook = books.find((b) => b.id === activeBookId) || books[0];
+
   return (
     <header className="sticky top-0 z-30 bg-slate-900 text-white border-b border-slate-800 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Zone 1: Brand title (single text element) */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+        {/* Zone 1: Brand title & Book Selector */}
         <div className="flex items-center gap-3">
           {onToggleMobileMenu && (
             <button
@@ -39,24 +48,41 @@ export const Header: React.FC<HeaderProps> = ({
           )}
           <button
             onClick={() => onSelectTab('dashboard')}
-            className="text-left group flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-sm"
+            className="text-left group flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-sm"
           >
-            <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center font-bold text-white text-base tracking-wider shadow-inner">
-              P
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-sm tracking-wider shadow-inner shrink-0">
+              T
             </div>
-            <div>
-              <span className="text-lg font-bold tracking-tight text-white group-hover:text-blue-300 transition-colors">
-                TOEFL CBT SUCCESS
+            <div className="hidden sm:block">
+              <span className="text-base font-bold tracking-tight text-white group-hover:text-blue-300 transition-colors">
+                TOEFL SUCCESS
               </span>
-              <span className="hidden sm:inline text-xs text-slate-400 ml-2 font-normal">
-                Peterson’s Digital Prep
+              <span className="block text-[10px] text-slate-400 font-normal leading-tight">
+                Multi-Source Learning Suite
               </span>
             </div>
           </button>
+
+          {/* Quick Book Selector Dropdown */}
+          <div className="relative flex items-center ml-1 sm:ml-2">
+            <select
+              value={activeBookId}
+              onChange={(e) => onSelectBook(e.target.value as BookId)}
+              aria-label="Select Active Source Book"
+              className="appearance-none bg-slate-800 text-xs font-semibold text-blue-300 hover:text-white py-1.5 pl-3 pr-8 rounded-lg border border-slate-700 hover:border-slate-600 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer max-w-[150px] sm:max-w-[210px] md:max-w-[260px] truncate"
+            >
+              {books.map((b) => (
+                <option key={b.id} value={b.id} className="bg-slate-900 text-white">
+                  {b.shortTitle} ({b.format})
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
+          </div>
         </div>
 
         {/* Zone 2: Fast Quick Links */}
-        <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-300">
+        <nav className="hidden lg:flex items-center gap-5 text-xs font-medium text-slate-300">
           <button
             onClick={() => onSelectTab('dashboard')}
             className={`transition-colors hover:text-white ${
@@ -66,12 +92,13 @@ export const Header: React.FC<HeaderProps> = ({
             Dashboard
           </button>
           <button
-            onClick={() => onSelectTab('getting-started')}
-            className={`transition-colors hover:text-white ${
-              activeTab === 'getting-started' ? 'text-blue-400 font-semibold' : ''
+            onClick={() => onSelectTab('books')}
+            className={`transition-colors hover:text-white flex items-center gap-1.5 ${
+              activeTab === 'books' ? 'text-blue-400 font-semibold' : ''
             }`}
           >
-            Getting Started
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Book Library</span>
           </button>
           <button
             onClick={() => onSelectTab('mini-tests')}
@@ -100,14 +127,14 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* Zone 3: Actions */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={onOpenSearch}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-800/80 hover:bg-slate-800 hover:text-white border border-slate-700 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-300 bg-slate-800/80 hover:bg-slate-800 hover:text-white border border-slate-700 rounded-lg transition-colors"
             title="Search curriculum & questions (Cmd+K / Ctrl+K)"
           >
             <Search className="w-3.5 h-3.5 text-slate-400" />
-            <span className="hidden sm:inline">Search Guide</span>
+            <span className="hidden sm:inline">Search</span>
             <kbd className="hidden md:inline text-[10px] bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded text-slate-400">
               ⌘K
             </kbd>
@@ -116,9 +143,9 @@ export const Header: React.FC<HeaderProps> = ({
           {hasResume && (
             <button
               onClick={onResumeLast}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-sm transition-colors whitespace-nowrap"
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-sm transition-colors whitespace-nowrap"
             >
-              <PlayCircle className="w-4 h-4" />
+              <PlayCircle className="w-3.5 h-3.5" />
               <span>Resume</span>
             </button>
           )}
@@ -140,3 +167,4 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+

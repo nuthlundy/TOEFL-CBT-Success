@@ -2,6 +2,29 @@
  * Peterson's TOEFL CBT Success - Type Definitions
  */
 
+export type BookId =
+  | 'PETERSONS-CBT-SUCCESS'
+  | 'CLIFFS-TOEFL-PREPARATION-GUIDE'
+  | 'CLIFFS-TOEFL-CBT';
+
+export interface BookMetadata {
+  id: BookId;
+  code: string;
+  title: string;
+  shortTitle: string;
+  author: string;
+  publisher: string;
+  edition?: string;
+  publicationYear?: number;
+  format: 'PBT' | 'CBT' | 'iBT';
+  description: string;
+  totalSections: number;
+  totalLessons?: number;
+  totalMiniTests?: number;
+  totalPracticeTests?: number;
+  status: 'ACTIVE' | 'PLANNED';
+}
+
 export type SectionType = 'listening' | 'structure' | 'reading' | 'twe';
 
 export type QuestionType =
@@ -16,16 +39,19 @@ export interface AnswerChoice {
 }
 
 export interface Question {
-  id: string; // e.g. "LISTENING-L01-EX01-Q01"
+  id: string; // e.g. "LISTENING-L01-EX01-Q01" or "CLIFFS-PREP-PT01-SEC02-Q01"
   stem: string;
   choices: AnswerChoice[];
   correctAnswer: string; // e.g. "B"
   explanation?: string;
   skill: string;
   sourcePage?: number;
-  sourceBook?: string; // "Peterson's TOEFL CBT Success"
+  sourcePdfPage?: number;
+  sourceBook?: string; // e.g. "Peterson's TOEFL CBT Success"
+  sourceBookId?: BookId;
   tapescript?: string;
-  status: 'VERIFIED' | 'NEEDS_REVIEW' | 'CONTENT_REVIEW_REQUIRED';
+  crossReferencePage?: number;
+  status: 'VERIFIED' | 'NEEDS_REVIEW' | 'CONTENT_REVIEW_REQUIRED' | 'AUDIO_SOURCE_REQUIRED';
 }
 
 export interface ExampleItem {
@@ -38,6 +64,7 @@ export interface ExampleItem {
   correctAnswer?: string;
   explanation: string;
   sourcePage?: number;
+  sourcePdfPage?: number;
 }
 
 export interface ExerciseItem {
@@ -52,11 +79,13 @@ export interface ExerciseItem {
 
 export interface Lesson {
   id: string;
+  sourceBookId?: BookId;
   section: SectionType;
   part: string;
   lessonNumber: number;
   title: string;
   sourcePages: number[];
+  sourcePdfPages?: number[];
   objective: string;
   summary: string;
   strategy: string[];
@@ -67,6 +96,7 @@ export interface Lesson {
 
 export interface MiniLesson {
   id: string;
+  sourceBookId?: BookId;
   section: SectionType;
   number: string; // "1.1", "2.1", "3.1"
   title: string;
@@ -87,6 +117,7 @@ export interface MiniLesson {
 
 export interface MiniTest {
   id: string;
+  sourceBookId?: BookId;
   number: number;
   title: string;
   section: SectionType;
@@ -117,6 +148,7 @@ export interface PracticeTestSection {
 
 export interface PracticeTest {
   id: string;
+  sourceBookId?: BookId;
   number: number;
   title: string;
   sourcePages: { start: number; end: number };
@@ -129,6 +161,7 @@ export interface PracticeTest {
 
 export interface UserAnswerAttempt {
   questionId: string;
+  sourceBookId?: BookId;
   userAnswer: string;
   isCorrect: boolean;
   timestamp: number;
@@ -140,6 +173,7 @@ export interface UserAnswerAttempt {
 
 export interface TestResultRecord {
   id: string;
+  sourceBookId?: BookId;
   testId: string;
   testTitle: string;
   date: number;
@@ -157,6 +191,7 @@ export interface TestResultRecord {
 
 export interface TweSubmission {
   id: string;
+  sourceBookId?: BookId;
   topicId: string;
   topicTitle: string;
   prompt: string;
@@ -175,7 +210,8 @@ export interface TweSubmission {
 
 export interface Bookmark {
   id: string;
-  type: 'lesson' | 'question' | 'test' | 'vocabulary';
+  sourceBookId?: BookId;
+  type: 'lesson' | 'topic' | 'question' | 'test' | 'vocabulary';
   targetId: string;
   title: string;
   section: SectionType;
@@ -184,6 +220,7 @@ export interface Bookmark {
 
 export interface NoteItem {
   id: string;
+  sourceBookId?: BookId;
   targetId: string;
   title: string;
   content: string;

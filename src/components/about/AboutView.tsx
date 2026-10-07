@@ -1,13 +1,19 @@
 /**
  * About & Book Provenance View
- * Outlines the source authority: Peterson's TOEFL CBT Success by Bruce Rogers
+ * Outlines the source authority and historical context for all 3 preparation volumes:
+ * 1. Peterson's TOEFL CBT Success (Bruce Rogers, Thomson Learning)
+ * 2. Cliffs TOEFL Preparation Guide (Michael A. Pyle & Mary Ellen Muñoz Page, Cliffs Notes)
+ * 3. CliffsTestPrep TOEFL CBT (Michael A. Pyle, IDG Books Worldwide)
  */
 
 import React from 'react';
-import { BookOpen, AlertTriangle, ShieldCheck, User, Building } from 'lucide-react';
+import { BookOpen, AlertTriangle, ShieldCheck, User, Building, Library } from 'lucide-react';
 import { HISTORICAL_NOTICE } from '../../data/gettingStartedData';
+import { getAllBooks } from '../../data/bookRegistry';
 
 export const AboutView: React.FC = () => {
+  const books = getAllBooks();
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
       {/* Header */}
@@ -18,10 +24,10 @@ export const AboutView: React.FC = () => {
           <span>Educational Provenance</span>
         </div>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
-          Peterson’s TOEFL CBT Success Digital Learning System
+          TOEFL Multi-Source Digital Preparation Suite
         </h1>
         <p className="text-xs text-slate-500">
-          Authoritative interactive course based on the complete instructional work by Bruce Rogers.
+          Authoritative interactive course platform preserving the complete instructional works of Peterson's and Cliffs Notes test-preparation experts.
         </p>
       </div>
 
@@ -34,53 +40,107 @@ export const AboutView: React.FC = () => {
         </div>
       </div>
 
-      {/* Author & Publisher Provenance */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-3">
-          <div className="flex items-center gap-2 text-blue-700">
-            <User className="w-5 h-5" />
-            <h2 className="text-base font-bold text-slate-900">About the Author</h2>
-          </div>
-          <p className="text-xs text-slate-600 leading-relaxed">
-            <strong>Bruce Rogers</strong> has taught English as a second language and test-preparation courses at the Economics Institute in Boulder, Colorado, since 1979. He has also taught in special programs at Bank Indonesia and Bank Negara Indonesia in Jakarta; at the National Economics University in Hanoi, Vietnam; at Yonsei University in Seoul, South Korea; and at the Samsung Human Resources Development Center in Yong-in, South Korea.
-          </p>
-          <p className="text-xs text-slate-600 leading-relaxed">
-            He is also the author of <em>The Complete Guide to TOEIC</em> and <em>The Complete Guide to TOEFL: Practice Tests</em>.
-          </p>
-        </div>
-
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-3">
-          <div className="flex items-center gap-2 text-blue-700">
-            <Building className="w-5 h-5" />
-            <h2 className="text-base font-bold text-slate-900">About Peterson's & Thomson</h2>
-          </div>
-          <p className="text-xs text-slate-600 leading-relaxed">
-            Founded in 1966, <strong>Peterson's</strong> (a division of Thomson Learning) is a leading provider of lifelong learning resources, software, and reference guides. Peterson's serves more than 55 million education consumers annually.
-          </p>
-          <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500 space-y-1 font-mono">
-            <div>ISBN: 0-7689-0682-4 (text with CD)</div>
-            <div>ISBN: 0-7689-0764-0 (text with audiocassettes)</div>
-            <div>Copyright © 2001 by Bruce Rogers</div>
-          </div>
-        </div>
-      </div>
-
-      {/* System Integrity & Rules */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-4">
+      {/* 3 Source Books In-Depth Provenance */}
+      <div className="space-y-6">
         <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-emerald-600" />
-          <span>Educational Integrity & Primary Source Policy</span>
+          <Library className="w-5 h-5 text-blue-600" />
+          <span>Integrated Source Volumes</span>
         </h2>
-        <div className="space-y-2 text-xs text-slate-600 leading-relaxed">
-          <p>
-            • <strong>Original Terminology & Organization:</strong> All lesson names, section divisions, question types, and explanations are preserved directly from the physical textbook.
-          </p>
-          <p>
-            • <strong>No Fabricated Content:</strong> Questions and answer keys originate strictly from the authorized text. Items requiring missing audio sources are explicitly identified with <code>AUDIO_SOURCE_REQUIRED</code> placeholders.
-          </p>
-          <p>
-            • <strong>Pedagogical Progression:</strong> The 7-step lesson player (Learn → Example → Try → Submit → Feedback → Explanation → Continue) ensures deliberate conceptual mastery rather than passive reading.
-          </p>
+
+        {/* Volume 1: Peterson's CBT */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Volume 1 · CBT Format</span>
+              <h3 className="text-base font-bold text-slate-900">Peterson's TOEFL CBT Success</h3>
+            </div>
+            <span className="text-xs font-mono text-slate-500">2002 Edition · ISBN 0-7689-0824-8</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600">
+            <div>
+              <h4 className="font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-blue-600" />
+                <span>Author: Bruce Rogers</span>
+              </h4>
+              <p className="leading-relaxed">
+                Taught ESL and test-preparation at the Economics Institute in Boulder, Colorado; National Economics University in Hanoi, Vietnam; Yonsei University in Seoul, South Korea; and author of <em>The Complete Guide to TOEIC</em>.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                <Building className="w-3.5 h-3.5 text-blue-600" />
+                <span>Publisher: Thomson Learning / Peterson's</span>
+              </h4>
+              <p className="leading-relaxed">
+                Founded in 1966, Peterson's is a leading publisher of educational prep and test-taking reference guides serving over 55 million learners annually.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Volume 2: Cliffs TOEFL Preparation Guide */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Volume 2 · PBT Format</span>
+              <h3 className="text-base font-bold text-slate-900">Cliffs TOEFL Preparation Guide</h3>
+            </div>
+            <span className="text-xs font-mono text-slate-500">5th Edition (1995) · ISBN 0-8220-2081-5</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600">
+            <div>
+              <h4 className="font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-amber-600" />
+                <span>Authors: Michael A. Pyle & Mary Ellen Muñoz Page</span>
+              </h4>
+              <p className="leading-relaxed">
+                Michael Pyle served as reading and grammar coordinator at University of Florida’s English Language Institute. Mary Ellen Muñoz Page taught ESL at Valencia Community College and conducted international TESOL workshops.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                <Building className="w-3.5 h-3.5 text-amber-600" />
+                <span>Publisher: Cliffs Notes, Inc. / IDG Books</span>
+              </h4>
+              <p className="leading-relaxed">
+                Series editor Jerry Bobrow, Ph.D. Famous for intensive 29-topic grammar formulas, pattern practice, and cross-referenced practice tests.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Volume 3: CliffsTestPrep TOEFL CBT */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Volume 3 · CBT Format</span>
+              <h3 className="text-base font-bold text-slate-900">CliffsTestPrep TOEFL CBT</h3>
+            </div>
+            <span className="text-xs font-mono text-slate-500">2001 Edition · ISBN 0-7645-8609-2</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600">
+            <div>
+              <h4 className="font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-blue-600" />
+                <span>Author: Michael A. Pyle</span>
+              </h4>
+              <p className="leading-relaxed">
+                Linguistics and ESL testing specialist with audio production by Constance Carlisle. Features comprehensive reviews of Listening, Structure with 6 quizzes, Reading, and Writing.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                <Building className="w-3.5 h-3.5 text-blue-600" />
+                <span>Publisher: IDG Books Worldwide, Inc.</span>
+              </h4>
+              <p className="leading-relaxed">
+                Published in 2001 under the CliffsTestPrep imprint, providing 6 full-length simulated CBT exams and 0–300 scaled score conversion tables.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

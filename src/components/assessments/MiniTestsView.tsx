@@ -14,16 +14,22 @@ import {
   FileCode,
 } from 'lucide-react';
 import { MINI_TESTS } from '../../data/miniTestsData';
-import { MiniTest, TestResultRecord } from '../../types/toefl';
+import { MiniTest, TestResultRecord, BookId } from '../../types/toefl';
 
 interface MiniTestsViewProps {
   onStartMiniTest: (miniTest: MiniTest) => void;
   testResults: TestResultRecord[];
+  miniTests?: MiniTest[];
+  activeBookId?: BookId;
+  bookTitle?: string;
 }
 
 export const MiniTestsView: React.FC<MiniTestsViewProps> = ({
   onStartMiniTest,
   testResults,
+  miniTests = MINI_TESTS,
+  activeBookId = 'PETERSONS-CBT-SUCCESS',
+  bookTitle = "Peterson's TOEFL CBT Success",
 }) => {
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
@@ -31,13 +37,13 @@ export const MiniTestsView: React.FC<MiniTestsViewProps> = ({
       <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-            <span>Periodic Review Evaluations</span>
+            <span>{bookTitle}</span>
             <span aria-hidden="true">·</span>
-            <span>All 8 Mini-Tests Ingested</span>
+            <span>{miniTests.length} Mini-Tests Available</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1 flex items-center gap-2">
             <CheckSquare className="w-5 h-5 text-blue-600" />
-            <span>Mini-Tests (Review Tests 1–8)</span>
+            <span>Mini-Tests (Review Tests 1–{miniTests.length})</span>
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             Standardized mini-tests reviewing points practiced in preceding lessons under authentic timed conditions.
@@ -47,7 +53,7 @@ export const MiniTestsView: React.FC<MiniTestsViewProps> = ({
 
       {/* Tests Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {MINI_TESTS.map((test) => {
+        {miniTests.map((test) => {
           const result = testResults.find((r) => r.testId === test.id);
           const Icon =
             test.section === 'listening'

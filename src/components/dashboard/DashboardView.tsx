@@ -1,7 +1,7 @@
 /**
  * Student Dashboard View
- * Displays overall progress, section mastery, weakest skills, recommended next lesson,
- * practice test launchpad, recent attempts, and study goal tracker.
+ * Multi-Book aware dashboard displaying overall progress, section mastery, weakest skills,
+ * recommended next lesson/topic, practice test launchpad, recent attempts, and study goal tracker.
  */
 
 import React from 'react';
@@ -18,12 +18,17 @@ import {
   FileText,
   AlertTriangle,
   RotateCcw,
+  Library,
+  ChevronDown,
 } from 'lucide-react';
 import { HISTORICAL_NOTICE } from '../../data/gettingStartedData';
-import { ALL_LESSONS } from '../../data/lessonsData';
-import { UserAnswerAttempt, TestResultRecord } from '../../types/toefl';
+import { UserAnswerAttempt, TestResultRecord, BookId, BookMetadata, Lesson } from '../../types/toefl';
 
 interface DashboardViewProps {
+  activeBookId: BookId;
+  books: BookMetadata[];
+  onSelectBook: (bookId: BookId) => void;
+  lessons: Lesson[];
   completedLessons: string[];
   attempts: UserAnswerAttempt[];
   testResults: TestResultRecord[];
@@ -36,6 +41,10 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
+  activeBookId,
+  books,
+  onSelectBook,
+  lessons,
   completedLessons,
   attempts,
   testResults,
@@ -46,25 +55,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onStartLesson,
   onStartPracticeTest,
 }) => {
-  // Calculations
-  const totalLessons = ALL_LESSONS.length;
+  const currentBook = books.find((b) => b.id === activeBookId) || books[0];
+
+  // Calculations for active book
+  const totalLessons = lessons.length;
   const completedCount = completedLessons.length;
-  const overallPercentage = Math.round((completedCount / totalLessons) * 100);
+  const overallPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
   // Section progress
-  const listeningTotal = ALL_LESSONS.filter((l) => l.section === 'listening').length;
-  const listeningDone = ALL_LESSONS.filter((l) => l.section === 'listening' && completedLessons.includes(l.id)).length;
-  const listeningPct = Math.round((listeningDone / listeningTotal) * 100);
+  const listeningTotal = lessons.filter((l) => l.section === 'listening').length;
+  const listeningDone = lessons.filter((l) => l.section === 'listening' && completedLessons.includes(l.id)).length;
+  const listeningPct = listeningTotal > 0 ? Math.round((listeningDone / listeningTotal) * 100) : 0;
 
-  const structureTotal = ALL_LESSONS.filter((l) => l.section === 'structure').length;
-  const structureDone = ALL_LESSONS.filter((l) => l.section === 'structure' && completedLessons.includes(l.id)).length;
-  const structurePct = Math.round((structureDone / structureTotal) * 100);
+  const structureTotal = lessons.filter((l) => l.section === 'structure').length;
+  const structureDone = lessons.filter((l) => l.section === 'structure' && completedLessons.includes(l.id)).length;
+  const structurePct = structureTotal > 0 ? Math.round((structureDone / structureTotal) * 100) : 0;
 
-  const readingTotal = ALL_LESSONS.filter((l) => l.section === 'reading').length;
-  const readingDone = ALL_LESSONS.filter((l) => l.section === 'reading' && completedLessons.includes(l.id)).length;
-  const readingPct = Math.round((readingDone / readingTotal) * 100);
+  const readingTotal = lessons.filter((l) => l.section === 'reading').length;
+  const readingDone = lessons.filter((l) => l.section === 'reading' && completedLessons.includes(l.id)).length;
+  const readingPct = readingTotal > 0 ? Math.round((readingDone / readingTotal) * 100) : 0;
 
-  // Weak skills calculation from attempt history
+  // Weak skills calculation from attempt history (active book only)
   const skillAttempts: Record<string, { total: number; incorrect: number }> = {};
   for (const att of attempts) {
     if (!skillAttempts[att.skill]) {
@@ -81,8 +92,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     .sort((a, b) => b[1].incorrect / b[1].total - a[1].incorrect / a[1].total)
     .slice(0, 3);
 
-  // Recommended next lesson
-  const nextLesson = ALL_LESSONS.find((l) => !completedLessons.includes(l.id)) || ALL_LESSONS[0];
+  // Recommended next lesson for current book
+  const nextLesson = lessons.find((l) => !completedLessons.includes(l.id)) || lessons[0];
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
@@ -95,318 +106,409 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
+      {/* Book Context & Switcher Bar */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-blue-50 text-blue-700 rounded-xl">
+            <Library className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+              Active Study Source
+            </span>
+            <h2 className="text-sm sm:text-base font-bold text-slate-900">
+              {currentBook.title}
+            </h2>
+            <p className="text-xs text-slate-500">
+              {currentBook.author} · {currentBook.publisher} ({currentBook.edition})
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <select
+              value={activeBookId}
+              onChange={(e) => onSelectBook(e.target.value as BookId)}
+              aria-label="Change Active Study Source"
+              className="appearance-none bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold py-2 pl-3 pr-8 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            >
+              {books.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.shortTitle}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-3 pointer-events-none" />
+          </div>
+
+          <button
+            onClick={() => onNavigateTab('books')}
+            className="px-3 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors whitespace-nowrap"
+          >
+            All 3 Books
+          </button>
+        </div>
+      </div>
+
       {/* Hero Welcome & Continue Studying Card */}
       <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-md">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
-            <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold uppercase tracking-wider">
-              <span>Interactive Learning System</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-medium border border-blue-500/30">
+              <span>{currentBook.format} Format Study Plan</span>
               <span aria-hidden="true">·</span>
-              <span>Peterson’s Complete Course</span>
+              <span>{completedCount} of {totalLessons} Finished</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-              Master the TOEFL Computer-Based Test
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              Ready to continue your preparation?
             </h1>
-            <p className="text-sm text-slate-300 leading-relaxed">
-              Step-by-step guidance for Listening, Structure & Written Expression, Reading Comprehension, and TWE Essays with authentic practice questions and test equating.
+            <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+              {nextLesson
+                ? `Next Up in ${currentBook.shortTitle}: Lesson ${nextLesson.lessonNumber} — "${nextLesson.title}"`
+                : `You've completed all lessons in ${currentBook.shortTitle}! Take a full practice test.`}
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/10 w-full md:w-80 space-y-4">
-            <div className="flex items-center justify-between text-xs text-slate-300">
-              <span className="font-medium text-slate-200">Recommended Next Step</span>
-              <span className="text-blue-300 font-mono">Lesson {nextLesson.lessonNumber}</span>
-            </div>
-            <div>
-              <h3 className="font-semibold text-white text-base leading-snug">
-                {nextLesson.title}
-              </h3>
-              <p className="text-xs text-slate-400 mt-1 line-clamp-1">
-                {nextLesson.part} · Book p. {nextLesson.sourcePages[0]}
-              </p>
-            </div>
-            <button
-              onClick={() => onStartLesson(nextLesson.id)}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm rounded-lg shadow-sm transition-colors"
-            >
-              <PlayCircle className="w-4 h-4" />
-              <span>Continue Lesson</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Grid: Overall Progress + Section Mastery + Study Goals */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Overall Progress */}
-        <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between text-xs text-slate-500 mb-2 font-medium">
-              <span>Curriculum Completion</span>
-              <span className="font-mono text-slate-900 font-bold">{overallPercentage}%</span>
-            </div>
-            <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-              <div
-                className="bg-blue-600 h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.max(overallPercentage, 3)}%` }}
-              />
-            </div>
-            <p className="text-xs text-slate-500 mt-3">
-              {completedCount} of {totalLessons} core lessons completed across all 3 sections.
-            </p>
-          </div>
-
-          <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between text-xs text-slate-600">
-            <span>Questions Attempted: <strong className="text-slate-900 font-mono">{attempts.length}</strong></span>
-            <span>Mistakes Logged: <strong className="text-slate-900 font-mono">{attempts.filter((a) => !a.isCorrect).length}</strong></span>
-          </div>
-        </div>
-
-        {/* Section Progress Bars */}
-        <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs space-y-3">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Section Mastery
-          </h2>
-          <div className="space-y-2.5 text-xs">
-            <div>
-              <div className="flex justify-between text-slate-700 font-medium mb-1">
-                <span className="flex items-center gap-1.5">
-                  <Headphones className="w-3.5 h-3.5 text-blue-600" />
-                  Listening
-                </span>
-                <span className="font-mono text-slate-900">{listeningPct}%</span>
-              </div>
-              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-blue-600 h-full rounded-full"
-                  style={{ width: `${listeningPct}%` }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-slate-700 font-medium mb-1">
-                <span className="flex items-center gap-1.5">
-                  <FileCode className="w-3.5 h-3.5 text-indigo-600" />
-                  Structure & Expression
-                </span>
-                <span className="font-mono text-slate-900">{structurePct}%</span>
-              </div>
-              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-indigo-600 h-full rounded-full"
-                  style={{ width: `${structurePct}%` }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-slate-700 font-medium mb-1">
-                <span className="flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-cyan-600" />
-                  Reading
-                </span>
-                <span className="font-mono text-slate-900">{readingPct}%</span>
-              </div>
-              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-cyan-600 h-full rounded-full"
-                  style={{ width: `${readingPct}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Today's Goal & Study Rhythm */}
-        <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-2">
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                Today’s Goal (30-5-5 Rule)
-              </span>
-              <span className="font-mono font-bold text-slate-900">{dailyMinutes} / 30 mins</span>
-            </div>
-            <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-              <div
-                className="bg-emerald-600 h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(Math.round((dailyMinutes / 30) * 100), 100)}%` }}
-              />
-            </div>
-            <p className="text-xs text-slate-500 mt-3 leading-relaxed">
-              Key #2: Study for 30 minutes, take a 5-minute break, review for 5 minutes before your next topic.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4 pt-3 border-t border-slate-100 text-xs text-slate-600">
-            <button
-              onClick={() => onNavigateTab('bookmarks')}
-              className="hover:text-blue-600 flex items-center gap-1"
-            >
-              <Bookmark className="w-3.5 h-3.5 text-slate-400" />
-              <span>Bookmarks ({bookmarksCount})</span>
-            </button>
-            <button
-              onClick={() => onNavigateTab('notes')}
-              className="hover:text-blue-600 flex items-center gap-1"
-            >
-              <FileText className="w-3.5 h-3.5 text-slate-400" />
-              <span>Notes ({notesCount})</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Middle Row: Weak Skills & Quick Test Access */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Weakest Skills / Focus Areas */}
-        <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <RotateCcw className="w-4 h-4 text-amber-500" />
-              <span>Priority Focus & Weak Skills</span>
-            </h2>
-            <button
-              onClick={() => onNavigateTab('mistakes')}
-              className="text-xs font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
-            >
-              <span>Review Mistakes</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {weakSkills.length > 0 ? (
-            <div className="space-y-2.5">
-              {weakSkills.map(([skill, data], idx) => {
-                const errorRate = Math.round((data.incorrect / data.total) * 100);
-                return (
-                  <div
-                    key={skill}
-                    className="p-3 bg-slate-50 border border-slate-200/80 rounded-lg flex items-center justify-between text-xs"
-                  >
-                    <div>
-                      <span className="font-mono text-slate-400 mr-2">0{idx + 1}.</span>
-                      <strong className="text-slate-800 font-medium">{skill}</strong>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-500">
-                      <span className="text-rose-600 font-semibold font-mono">{errorRate}% incorrect</span>
-                      <span aria-hidden="true">·</span>
-                      <span>({data.incorrect}/{data.total})</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="p-6 text-center text-xs text-slate-500 border border-dashed border-slate-200 rounded-lg">
-              <p>No recurring weak skills recorded yet.</p>
-              <p className="mt-1 text-slate-400">
-                Complete lesson exercises or mini-tests to identify areas needing focused practice.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Full-Length Practice Tests Quick Launch */}
-        <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Award className="w-4 h-4 text-blue-600" />
-              <span>Full-Length Practice Tests</span>
-            </h2>
+          <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0">
+            {nextLesson && (
+              <button
+                onClick={() => onStartLesson(nextLesson.id)}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm rounded-xl shadow-sm transition-all transform hover:scale-[1.02]"
+              >
+                <PlayCircle className="w-4 h-4" />
+                <span>Continue Lesson {nextLesson.lessonNumber}</span>
+              </button>
+            )}
             <button
               onClick={() => onNavigateTab('practice-tests')}
-              className="text-xs font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-800/90 hover:bg-slate-800 text-slate-200 font-medium text-xs rounded-xl border border-slate-700 transition-colors"
             >
-              <span>View All Tests</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <Award className="w-4 h-4 text-emerald-400" />
+              <span>Launch Practice Test</span>
             </button>
           </div>
+        </div>
 
-          <div className="space-y-3">
-            {[1, 2, 3].map((num) => {
-              const testId = `practice-test-0${num}`;
-              const pastResult = testResults.find((r) => r.testId === testId);
-              return (
-                <div
-                  key={testId}
-                  className="p-3.5 border border-slate-200/80 rounded-lg flex items-center justify-between hover:border-blue-300 transition-colors bg-slate-50/50"
-                >
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-900">
-                      Practice Test {num}
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      140 CBT Questions · 3 Sections · Equated 0–300 Scale
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    {pastResult ? (
-                      <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded">
-                        Score: {pastResult.totalScaledRange}
-                      </span>
-                    ) : null}
-                    <button
-                      onClick={() => onStartPracticeTest(testId)}
-                      className="px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md transition-colors"
-                    >
-                      {pastResult ? 'Retake' : 'Start Test'}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+        {/* Global Progress Bar */}
+        <div className="mt-6 pt-6 border-t border-slate-800/80">
+          <div className="flex items-center justify-between text-xs mb-2">
+            <span className="text-slate-400">
+              {currentBook.shortTitle} Curriculum Progress
+            </span>
+            <span className="font-mono font-bold text-blue-400">{overallPercentage}%</span>
+          </div>
+          <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+            <div
+              className="bg-blue-500 h-full rounded-full transition-all duration-500 shadow-sm"
+              style={{ width: `${overallPercentage}%` }}
+            />
           </div>
         </div>
       </div>
 
-      {/* Quick Launch Cards for Major Study Areas */}
+      {/* 4 Core Section Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <button
+        {/* Section 1: Listening */}
+        <div
           onClick={() => onNavigateTab('listening')}
-          className="p-4 bg-white border border-slate-200/90 rounded-xl text-left hover:border-blue-400 hover:shadow-xs transition-all group"
+          className="bg-white border border-slate-200/90 hover:border-blue-400 rounded-2xl p-5 shadow-xs transition-all cursor-pointer group flex flex-col justify-between"
         >
-          <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-            <Headphones className="w-4 h-4" />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-xl bg-blue-50 text-blue-700 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <Headphones className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-mono font-bold text-slate-400">
+                {listeningDone}/{listeningTotal}
+              </span>
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
+                Listening
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Dialogs, conversations, lectures
+              </p>
+            </div>
           </div>
-          <h3 className="text-sm font-bold text-slate-900">Listening</h3>
-          <p className="text-xs text-slate-500 mt-1">16 Lessons & 12 Idiom Mini-Lessons</p>
-        </button>
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span className="font-semibold text-blue-700 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+              <span>Study</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </span>
+            <span className="font-mono text-slate-400">{listeningPct}%</span>
+          </div>
+        </div>
 
-        <button
+        {/* Section 2: Structure */}
+        <div
           onClick={() => onNavigateTab('structure')}
-          className="p-4 bg-white border border-slate-200/90 rounded-xl text-left hover:border-indigo-400 hover:shadow-xs transition-all group"
+          className="bg-white border border-slate-200/90 hover:border-blue-400 rounded-2xl p-5 shadow-xs transition-all cursor-pointer group flex flex-col justify-between"
         >
-          <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-            <FileCode className="w-4 h-4" />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-700 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                <FileCode className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-mono font-bold text-slate-400">
+                {structureDone}/{structureTotal}
+              </span>
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 group-hover:text-indigo-700 transition-colors">
+                Structure & Written
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Grammar rules, formulas, error recognition
+              </p>
+            </div>
           </div>
-          <h3 className="text-sm font-bold text-slate-900">Structure & Expression</h3>
-          <p className="text-xs text-slate-500 mt-1">27 Grammar Lessons & Prepositions</p>
-        </button>
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span className="font-semibold text-indigo-700 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+              <span>Study</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </span>
+            <span className="font-mono text-slate-400">{structurePct}%</span>
+          </div>
+        </div>
 
-        <button
+        {/* Section 3: Reading */}
+        <div
           onClick={() => onNavigateTab('reading')}
-          className="p-4 bg-white border border-slate-200/90 rounded-xl text-left hover:border-cyan-400 hover:shadow-xs transition-all group"
+          className="bg-white border border-slate-200/90 hover:border-blue-400 rounded-2xl p-5 shadow-xs transition-all cursor-pointer group flex flex-col justify-between"
         >
-          <div className="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center mb-3 group-hover:bg-cyan-600 group-hover:text-white transition-colors">
-            <BookOpen className="w-4 h-4" />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-mono font-bold text-slate-400">
+                {readingDone}/{readingTotal}
+              </span>
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
+                Reading
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Passages, inference, vocabulary
+              </p>
+            </div>
           </div>
-          <h3 className="text-sm font-bold text-slate-900">Reading</h3>
-          <p className="text-xs text-slate-500 mt-1">5 Core Skills & 500+ Word Bank</p>
-        </button>
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span className="font-semibold text-emerald-700 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+              <span>Study</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </span>
+            <span className="font-mono text-slate-400">{readingPct}%</span>
+          </div>
+        </div>
 
-        <button
+        {/* Section 4: TWE */}
+        <div
           onClick={() => onNavigateTab('twe')}
-          className="p-4 bg-white border border-slate-200/90 rounded-xl text-left hover:border-emerald-400 hover:shadow-xs transition-all group"
+          className="bg-white border border-slate-200/90 hover:border-blue-400 rounded-2xl p-5 shadow-xs transition-all cursor-pointer group flex flex-col justify-between"
         >
-          <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-            <PenTool className="w-4 h-4" />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-xl bg-amber-50 text-amber-700 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                <PenTool className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-mono font-bold text-slate-400">
+                TWE Essay
+              </span>
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 group-hover:text-amber-700 transition-colors">
+                Essay Writing
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Models, outlines, rubric
+              </p>
+            </div>
           </div>
-          <h3 className="text-sm font-bold text-slate-900">TWE Essay</h3>
-          <p className="text-xs text-slate-500 mt-1">10 Keys, Models & 3 Prompts</p>
-        </button>
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span className="font-semibold text-amber-700 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+              <span>Practice</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </span>
+            <span className="font-mono text-slate-400">Workspace</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Two-Column Utility & Performance Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left 2 Cols: Weak Skills & Recent Activity */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Weak Skills Target Area */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-rose-50 text-rose-600 rounded-lg">
+                  <RotateCcw className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Targeted Error Analysis ({currentBook.shortTitle})
+                </h3>
+              </div>
+              <button
+                onClick={() => onNavigateTab('mistakes')}
+                className="text-xs font-semibold text-blue-700 hover:text-blue-600"
+              >
+                Review All Mistakes →
+              </button>
+            </div>
+
+            {weakSkills.length > 0 ? (
+              <div className="space-y-3">
+                {weakSkills.map(([skill, stats]) => {
+                  const errorPct = Math.round((stats.incorrect / stats.total) * 100);
+                  return (
+                    <div
+                      key={skill}
+                      className="p-3 bg-slate-50 rounded-xl flex items-center justify-between gap-4 text-xs"
+                    >
+                      <div>
+                        <span className="font-semibold text-slate-800">{skill}</span>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          {stats.incorrect} error{stats.incorrect > 1 ? 's' : ''} out of {stats.total} attempts
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-rose-600 font-bold font-mono">
+                          {errorPct}% error rate
+                        </span>
+                        <button
+                          onClick={() => onNavigateTab('structure')}
+                          className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 rounded-lg font-medium text-slate-700 transition-colors"
+                        >
+                          Review Skill
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 py-3 text-center">
+                No recurring mistake patterns logged yet for this book. Work through practice exercises and mini-tests to track skill diagnostics!
+              </p>
+            )}
+          </div>
+
+          {/* Quick Study Tools row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div
+              onClick={() => onNavigateTab('bookmarks')}
+              className="p-4 bg-white border border-slate-200/90 hover:border-amber-400 rounded-2xl cursor-pointer transition-all flex items-center justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-50 text-amber-700 rounded-xl">
+                  <Bookmark className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Bookmarks</h4>
+                  <p className="text-[11px] text-slate-500">{bookmarksCount} saved</p>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-400" />
+            </div>
+
+            <div
+              onClick={() => onNavigateTab('notes')}
+              className="p-4 bg-white border border-slate-200/90 hover:border-blue-400 rounded-2xl cursor-pointer transition-all flex items-center justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-50 text-blue-700 rounded-xl">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Study Notes</h4>
+                  <p className="text-[11px] text-slate-500">{notesCount} notes</p>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Right Col: Daily Goal & Test Results */}
+        <div className="space-y-6">
+          {/* Daily Study Goal */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-blue-50 text-blue-700 rounded-lg">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900">Daily Study Target</h3>
+              </div>
+              <span className="text-xs font-mono font-bold text-blue-700">
+                {dailyMinutes}/30 min
+              </span>
+            </div>
+
+            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-blue-600 h-full rounded-full transition-all duration-300"
+                style={{ width: `${Math.min(100, Math.round((dailyMinutes / 30) * 100))}%` }}
+              />
+            </div>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Target: 30 minutes daily practice for consistent score gains.
+            </p>
+          </div>
+
+          {/* Test Performance Launchpad */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900">
+                Practice Exams ({currentBook.shortTitle})
+              </h3>
+              <button
+                onClick={() => onNavigateTab('practice-tests')}
+                className="text-xs font-semibold text-blue-700 hover:text-blue-600"
+              >
+                View All →
+              </button>
+            </div>
+
+            {testResults.length > 0 ? (
+              <div className="space-y-2">
+                {testResults.slice(0, 2).map((tr) => (
+                  <div key={tr.id} className="p-3 bg-slate-50 rounded-xl text-xs space-y-1">
+                    <div className="flex items-center justify-between font-bold text-slate-900">
+                      <span>{tr.testTitle}</span>
+                      <span className="text-blue-700 font-mono">
+                        {tr.rawTotal}/{tr.maxTotal}
+                      </span>
+                    </div>
+                    {tr.totalScaledRange && (
+                      <p className="text-[11px] text-slate-500">
+                        Converted Score: {tr.totalScaledRange}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 space-y-2">
+                <Award className="w-8 h-8 text-slate-300 mx-auto" />
+                <p className="text-xs text-slate-500">
+                  No full practice exams completed yet for this book.
+                </p>
+                <button
+                  onClick={() => onNavigateTab('practice-tests')}
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-500"
+                >
+                  Start Practice Test 1
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

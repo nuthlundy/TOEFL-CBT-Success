@@ -15,18 +15,24 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { PRACTICE_TESTS, SCORE_CONVERSION_TABLE } from '../../data/practiceTestsData';
-import { PracticeTest, TestResultRecord } from '../../types/toefl';
+import { PracticeTest, TestResultRecord, BookId } from '../../types/toefl';
 
 interface PracticeTestsViewProps {
   onStartFullTest: (test: PracticeTest) => void;
   onStartSectionTest: (test: PracticeTest, sectionKey: 'listening' | 'structure' | 'reading') => void;
   testResults: TestResultRecord[];
+  practiceTests?: PracticeTest[];
+  activeBookId?: BookId;
+  bookTitle?: string;
 }
 
 export const PracticeTestsView: React.FC<PracticeTestsViewProps> = ({
   onStartFullTest,
   onStartSectionTest,
   testResults,
+  practiceTests = PRACTICE_TESTS,
+  activeBookId = 'PETERSONS-CBT-SUCCESS',
+  bookTitle = "Peterson's TOEFL CBT Success",
 }) => {
   const [showTableModal, setShowTableModal] = useState(false);
 
@@ -36,16 +42,16 @@ export const PracticeTestsView: React.FC<PracticeTestsViewProps> = ({
       <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-            <span>Realistic Full Examination Sessions</span>
+            <span>{bookTitle}</span>
             <span aria-hidden="true">·</span>
-            <span>Book pp. 390–492</span>
+            <span>{practiceTests.length} Full Practice Exams</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1 flex items-center gap-2">
             <Award className="w-6 h-6 text-blue-600" />
-            <span>Three Complete Practice Tests</span>
+            <span>Full Practice Tests</span>
           </h1>
           <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-            Simulate the full TOEFL CBT test experience across all three sections with strict timing, question palettes, and statistical test score equating.
+            Simulate the full TOEFL test experience across all sections with strict timing, question palettes, and scoring.
           </p>
         </div>
 
@@ -60,7 +66,7 @@ export const PracticeTestsView: React.FC<PracticeTestsViewProps> = ({
 
       {/* Tests Showcase Cards */}
       <div className="space-y-6">
-        {PRACTICE_TESTS.map((test) => {
+        {practiceTests.map((test) => {
           const pastResults = testResults.filter((r) => r.testId === test.id);
           const latestResult = pastResults[0];
 

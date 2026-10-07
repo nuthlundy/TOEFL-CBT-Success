@@ -30,24 +30,44 @@ import {
   evaluateTweEssay,
   TweTopicPrompt,
 } from '../../data/tweData';
-import { TweSubmission } from '../../types/toefl';
+import { BookId, TweSubmission } from '../../types/toefl';
+import { bookContentService } from '../../services/bookContentService';
 
 interface TweWorkspaceProps {
   onSaveSubmission: (sub: TweSubmission) => void;
   submissions: TweSubmission[];
+  activeBookId?: BookId;
 }
 
 export const TweWorkspace: React.FC<TweWorkspaceProps> = ({
   onSaveSubmission,
   submissions,
+  activeBookId = 'PETERSONS-CBT-SUCCESS',
 }) => {
   const [activeTab, setActiveTab] = useState<'write' | 'keys' | 'models' | 'history'>('write');
-  const [selectedTopic, setSelectedTopic] = useState<TweTopicPrompt>(TWE_PRACTICE_TOPICS[0]);
+  
+  const currentTweData = bookContentService.getTweData(activeBookId);
+  const availableTopics: TweTopicPrompt[] =
+    currentTweData.topics.length > 0
+      ? (currentTweData.topics as any)
+      : TWE_PRACTICE_TOPICS;
+
+  const [selectedTopic, setSelectedTopic] = useState<TweTopicPrompt>(availableTopics[0]);
   const [notes, setNotes] = useState('');
   const [essay, setEssay] = useState('');
   const [secondsRemaining, setSecondsRemaining] = useState(30 * 60);
   const [timerRunning, setTimerRunning] = useState(false);
   const [evaluationResult, setEvaluationResult] = useState<any | null>(null);
+
+  // Sync selected topic if activeBookId changes
+  useEffect(() => {
+    if (availableTopics.length > 0) {
+      setSelectedTopic(availableTopics[0]);
+      setNotes('');
+      setEssay('');
+      setEvaluationResult(null);
+    }
+  }, [activeBookId]);
 
   // Timer logic
   useEffect(() => {
